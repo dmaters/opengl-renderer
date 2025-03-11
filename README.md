@@ -1,8 +1,9 @@
 # OpenGL GLTF Renderer
 
-A simple OpenGL forward renderer for with shadow maps and basic PBR (Physically Based Rendering) support. This project is intended to be an introduction to the OpenGL API and computer graphics in general, so it won't have advanced features nor will it have future development, other than the intended features. 
+A simple OpenGL forward renderer for with shadow maps and basic PBR (Physically Based Rendering) support. \
+This project is intended to be an introduction to the OpenGL API and computer graphics in general, so it won't have advanced features nor will it have future development, other than the intended features. 
 
-This project is superseded by my (vulkan renderer)(https://github.com/dmaters/vulkan-renderer.git).
+This project is superseded by my [vulkan renderer](https://github.com/dmaters/vulkan-renderer.git).
 
 
 ## Features
@@ -39,19 +40,18 @@ This project is superseded by my (vulkan renderer)(https://github.com/dmaters/vu
 
 ## Usage
 
-Load a model by passing the location as an command line argument.
-Lighting and camera position can be adjusted in the source code (src/Application.cpp).
-The renderer supports basic PBR materials and directional and point light shadows.
-Use the mouse and keyboard to navigate the scene.
+- Load a model by passing the location as an command line argument.
+- Lighting and camera position can be adjusted in the source code (src/Application.cpp).
+- Use the mouse and keyboard (WASD) to navigate the scene.
 
 ## Limitations
 
-Limited material support (only basic PBR properties are implemented).
-No advanced rendering features like light culling, anti-aliasing, global illumination, etc. 
-No scene managment, for model switching application has to be re-launched.
+- Limited material support (only basic PBR properties are implemented).
+- No advanced rendering features like light culling, anti-aliasing, global illumination, etc.  
+- No scene managment, for model switching application has to be re-launched.
 
 ## Notable features
 
-1. Skybox is rendered in screen-space
-2. Point light shadow-mapping, using cubemapped depth buffers managed with geometry shaders.
-3. Modern OpenGL with DSA/AZDO 
+- Skybox is rendered in screen-space
+- Point light shadow-mapping, using cubemapped depth buffers managed with geometry shaders.
+- Modern OpenGL with DSA/AZDO 
