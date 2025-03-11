@@ -1,0 +1,331 @@
+#include "TextureManager.h"
+
+#include <glad/glad.h>
+#include <stb/stb_image.h>
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <filesystem>
+#include <iostream>
+#include <optional>
+#include <string_view>
+
+#include "Resources.h"
+#include "Texture.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+using namespace std::literals::string_view_literals;
+TextureManager::TextureManager() { setupDefaultTextures(); }
+constexpr std::array CUBEMAP_FACES = { "right.png"sv, "left.png"sv,
+	                                   "top.png"sv,   "bottom.png"sv,
+	                                   "front.png"sv, "back.png"sv };
+
+TextureHandle TextureManager::createTexture(
+	const TextureSpecification& specs, TextureHandle overrideHandle
+) {
+	Texture texture = specs.definition;
+
+	glCreateTextures(specs.definition.type, 1, &texture.textureID);
+
+	if (specs.definition.depth > 1 &&
+	    specs.definition.type != GL_TEXTURE_CUBE_MAP)
+		glTextureStorage3D(
+			texture.textureID,
+			0,
+			texture.format,
+			texture.width,
+			texture.height,
+			texture.depth
+		);
+
+	else
+		glTextureStorage2D(
+			texture.textureID,
+			texture.mipmap_levels,
+			texture.format,
+			texture.width,
+			texture.height
+		);
+
+	glTextureParameteri(texture.textureID, GL_TEXTURE_WRAP_S, texture.wrapping);
+	glTextureParameteri(texture.textureID, GL_TEXTURE_WRAP_T, texture.wrapping);
+	if (texture.type == GL_TEXTURE_CUBE_MAP)
+		glTextureParameteri(
+			texture.textureID, GL_TEXTURE_WRAP_R, texture.wrapping
+		);
+
+	glTextureParameteri(
+		texture.textureID,
+		GL_TEXTURE_MIN_FILTER,
+		texture.mipmap_levels > 1 ? GL_LINEAR_MIPMAP_LINEAR : texture.filtering
+	);
+	glTextureParameteri(
+		texture.textureID, GL_TEXTURE_MAG_FILTER, texture.filtering
+	);
+
+	if (texture.format == GL_DEPTH_COMPONENT24) {
+		glTextureParameteri(
+			texture.textureID,
+			GL_TEXTURE_COMPARE_MODE,
+			GL_COMPARE_REF_TO_TEXTURE
+		);
+	}
+
+	if (specs.data.has_value()) {
+		if (texture.type == GL_TEXTURE_CUBE_MAP) {
+			size_t faceSize = texture.width * texture.height * 4;
+
+			for (int i = 0; i < 6; i++)
+
+			{
+				glTextureSubImage3D(
+					texture.textureID,
+					0,
+					0,
+					0,
+					i,
+					texture.width,
+					texture.height,
+					texture.depth,
+					specs.data->format,
+					specs.data->encoding,
+					specs.data->data.data() + i * faceSize
+				);
+			}
+
+		} else if (texture.depth > 1)
+			glTextureSubImage3D(
+				texture.textureID,
+				0,
+				0,
+				0,
+				0,
+				texture.width,
+				texture.height,
+				texture.depth,
+				specs.data->format,
+				specs.data->encoding,
+				specs.data->data.data()
+			);
+		else
+			glTextureSubImage2D(
+				texture.textureID,
+				0,
+				0,
+				0,
+				texture.width,
+				texture.height,
+				specs.data->format,
+				specs.data->encoding,
+				specs.data->data.data()
+			);
+	}
+
+	GLuint64 textureHandle = glGetTextureHandleARB(texture.textureID);
+	glMakeTextureHandleResidentARB(textureHandle);
+	texture.textureBindlessHandle = textureHandle;
+
+	if (overrideHandle == TextureHandle::UNASSIGNED) {
+		TextureHandle handle { m_nextHandle };
+		m_textures[handle] = texture;
+		m_nextHandle++;
+
+		return handle;
+	}
+
+	if (m_nextHandle <= overrideHandle.value) {
+		m_nextHandle = overrideHandle.value + 1;
+	}
+
+	releaseTexture(overrideHandle);
+
+	m_textures[overrideHandle] = texture;
+
+	return overrideHandle;
+}
+
+void TextureManager::releaseTexture(TextureHandle handle) {
+	uint32_t textureID = m_textures[handle].textureID;
+	m_textures.erase(handle);
+
+	glDeleteTextures(0, &textureID);
+}
+
+void TextureManager::setupDefaultTextures() {
+	//---------ALBEDO---------
+
+	std::vector<unsigned char> data = {
+		0xFF,
+		0x00,
+		0xFF,
+	};
+
+	TextureManager::TextureSpecification albedoSpecs = {
+		.definition = { 
+			.filtering = GL_NEAREST,
+			.format = GL_RGB8,
+            .width = 1,
+            .height = 1,
+		},
+
+		.data = TextureManager::TextureData { .format = GL_RGB,
+                       .encoding = GL_UNSIGNED_BYTE,
+                       .data = data },
+	};
+
+	TextureManager::createTexture(albedoSpecs, TextureHandle::DEFAULT_ALBEDO);
+
+	//---------NORMAL---------
+
+	data = {
+		0x7F,
+		0x7F,
+		0xFF,
+	};
+
+	TextureManager::TextureSpecification normalSpecs = {
+		.definition = { 
+			.filtering = GL_NEAREST,
+			.format = GL_RGB8,
+            .width = 1,
+            .height = 1,
+		},
+
+		.data =
+			TextureManager::TextureData {
+										 .format = GL_RGB,
+										 .encoding = GL_UNSIGNED_BYTE,
+										 .data = data,
+										 },
+	};
+
+	TextureManager::createTexture(normalSpecs, TextureHandle::DEFAULT_NORMAL);
+
+	//---------ROUGHNESS---------
+
+	data = {
+		0x7F,
+		0x00,
+	};
+
+	TextureManager::TextureSpecification roughnessSpecs = {
+		.definition = { 
+			.filtering = GL_NEAREST,
+			.format = GL_R8,
+            .width = 1,
+            .height = 1,
+		},
+
+		.data =
+			TextureManager::TextureData {
+										 .format = GL_RED,
+										 .encoding = GL_UNSIGNED_BYTE,
+										 .data = data,
+										 },
+	};
+
+	TextureManager::createTexture(
+		roughnessSpecs, TextureHandle::DEFAULT_ROUGHNESS_METALLIC
+	);
+
+	//---------EMISSION---------
+
+	data = {
+		0x00,
+	};
+
+	TextureManager::TextureSpecification emissionSpecs = {
+		.definition = { 
+			.filtering = GL_NEAREST,
+			.format = GL_RGB8,
+            .width = 1,
+            .height = 1,
+		},
+
+		.data =
+			TextureManager::TextureData {
+										 .format = GL_RED,
+										 .encoding = GL_UNSIGNED_BYTE,
+										 .data = data,
+										 },
+	};
+
+	TextureManager::createTexture(
+		emissionSpecs, TextureHandle::DEFAULT_EMISSION
+	);
+}
+
+GLenum channelsToFormat(int channels) {
+	switch (channels) {
+		case 1:
+			return GL_RED;
+		case 2:
+			return GL_RG;
+		case 3:
+			return GL_RGB;
+		case 4:
+			return GL_RGBA;
+		default:
+			return GL_RGBA;
+	}
+}
+
+std::vector<unsigned char> loadData(
+	std::filesystem::path path, int& width, int& height, int& channels
+) {
+	std::vector<unsigned char> data;
+
+	unsigned char* rawData =
+		stbi_load(path.string().data(), &width, &height, &channels, 0);
+	if (rawData == nullptr && stbi_failure_reason()) {
+		std::cout << "Error loading " + path.string() + "|"
+				  << "Failed for error " << stbi_failure_reason() << std::endl;
+		return data;
+	}
+
+	data = std::vector<unsigned char>(
+		rawData, rawData + width * height * channels
+	);
+	return data;
+}
+
+TextureHandle TextureManager::loadTexture(
+	const std::filesystem::path& path, TextureHandle handle
+) {
+	assert(std::filesystem::exists(path));
+	std::vector<unsigned char> data;
+	int width, height, channels;
+	bool isCubemap = !std::filesystem::is_regular_file(path);
+
+	if (isCubemap) {
+		stbi_set_flip_vertically_on_load(0);
+		for (int i = 0; i < 6; i++) {
+			auto imageData =
+				loadData(path / CUBEMAP_FACES[i], width, height, channels);
+			data.insert(data.end(), imageData.begin(), imageData.end());
+		}
+	} else {
+		stbi_set_flip_vertically_on_load(1);
+		data = loadData(path, width, height, channels);
+	}
+
+	GLenum format = channelsToFormat(channels);
+
+	Texture definition = { .width = width, .height = height };
+	if (isCubemap) {
+		definition.wrapping = GL_CLAMP_TO_EDGE;
+		definition.type = GL_TEXTURE_CUBE_MAP;
+		// definition.depth = 6;
+	}
+
+	TextureManager::TextureSpecification specs {
+		.definition = definition,
+		.data = TextureManager::TextureData { .format = format,
+                                             .encoding = GL_UNSIGNED_BYTE,
+                                             .data = data }
+	};
+
+	return createTexture(specs);
+}
