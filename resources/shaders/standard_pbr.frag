@@ -9,9 +9,15 @@ in vec2 TexCoords;
 in vec4 FragPos;
 
 layout(bindless_sampler) uniform sampler2D albedo;
+uniform vec4 albedo_color;
 layout(bindless_sampler) uniform sampler2D normal;
 layout(bindless_sampler) uniform sampler2D roughness_metallic;
+uniform float roughness_value;
+uniform float metallic_value;
 layout(bindless_sampler) uniform sampler2D emissive;
+uniform float emissive_value;
+
+uniform int components;
 
 layout(std140, binding = 0) uniform projection_view {
 	mat4 view;
@@ -78,13 +84,29 @@ float geometrySmith(float NdotV, float NdotL, float a) {
 	float GGXL = NdotV * sqrt((NdotL - NdotL * a2) * NdotL + a2);
 	return 0.5 / (GGXV + GGXL);
 }
+vec4 getAlbedo(vec2 uv) {
+	if ((components & 1 << 0) != 0) return albedo_color;
+	return texture(albedo, uv);
+}
+float getMetallic(vec2 uv) {
+	if ((components & 1 << 1) != 0) return metallic_value;
+	return texture(roughness_metallic, uv).y;
+}
+float getRoughness(vec2 uv) {
+	if ((components & 1 << 2) != 0) return roughness_value;
+	return texture(roughness_metallic, uv).x;
+}
+float getEmissive(vec2 uv) {
+	if ((components & 1 << 3) != 0) return emissive_value;
+	return texture(emissive, uv).r;
+}
 
 vec3 microfacetBRDF(vec2 uv, vec3 viewDir, vec3 lightDir) {
 	vec3 halfview = normalize(viewDir + lightDir);
 	vec3 _norm = Normal;
-	float roughness = texture(roughness_metallic, uv).r;
-	float metallic = texture(roughness_metallic, uv).g;
-	vec3 albedo = texture(albedo, uv).rgb;
+	float roughness = getRoughness(uv);
+	float metallic = getMetallic(uv);
+	vec3 albedo = getAlbedo(uv).rgb;
 	// Dot products
 	float NdotV = max(dot(_norm, viewDir), 0.0);
 	float NdotL = max(dot(_norm, lightDir), 0.0);

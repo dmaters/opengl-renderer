@@ -2,7 +2,9 @@
 
 #include <glad/glad.h>
 
+#include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 #include <variant>
 
@@ -18,17 +20,21 @@ concept UniformDataValueType =
 	std::same_as<T, UBOHandle>;
 ;
 
+struct PBRMaterialValues {
+	TextureHandle albedo;
+	TextureHandle normal;
+	TextureHandle roughnessMetallic;
+	TextureHandle emission;
+	std::optional<glm::vec4> albedoColor = glm::vec4(0);
+	std::optional<float> roughnessValue = 1;
+	std::optional<float> metallicValue = 0;
+	std::optional<float> emissionValue = 0;
+};
+
 class ResourceManager;
 class Material {
 public:
-	static Material StandardPBRMaterial(
-
-		TextureHandle albedo,
-		TextureHandle normal,
-		TextureHandle roughnessMetallic,
-		TextureHandle emission
-
-	);
+	static Material StandardPBRMaterial(PBRMaterialValues values);
 
 	static Material CustomMaterial(ProgramHandle program);
 

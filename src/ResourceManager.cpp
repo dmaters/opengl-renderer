@@ -24,12 +24,12 @@ ResourceManager::ResourceManager() : m_textureManager() {
 
 	registerMaterial(
 		MaterialHandle::DEFAULT,
-		Material::StandardPBRMaterial(
+		Material::StandardPBRMaterial({
 			TextureHandle::DEFAULT_ALBEDO,
 			TextureHandle::DEFAULT_NORMAL,
 			TextureHandle::DEFAULT_ROUGHNESS_METALLIC,
-			TextureHandle::DEFAULT_EMISSION
-		)
+			TextureHandle::DEFAULT_EMISSION,
+		})
 	);
 
 	Primitive::ViewProjectionUniformBuffer vpUBO = {};

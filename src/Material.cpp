@@ -1,5 +1,7 @@
 #include "Material.h"
 
+#include <cstdint>
+
 #include "Program.h"
 #include "ResourceManager.h"
 #include "Resources.h"
@@ -73,40 +75,75 @@ void Material::bind(ResourceManager& resourceManager, Material& oldMaterial) {
 	}
 }
 
-Material Material::StandardPBRMaterial(
-	TextureHandle albedo,
-	TextureHandle normal,
-	TextureHandle roughnessMetallic,
-	TextureHandle emission
-) {
+enum class PBRComponents : uint8_t {
+	NONE = 0,
+	ALBEDO_VALUE = 1 << 0,
+	ROUGHNESS_VALUE = 1 << 1,
+	METALLIC_VALUE = 1 << 2,
+	EMISSION_VALUE = 1 << 3,
+};
+PBRComponents operator|(PBRComponents a, PBRComponents b) {
+	return static_cast<PBRComponents>(
+		static_cast<uint8_t>(a) | static_cast<uint8_t>(b)
+	);
+}
+
+Material Material::StandardPBRMaterial(PBRMaterialValues values) {
 	Material material;
-
+	PBRComponents components = PBRComponents::NONE;
 	material.m_program = ProgramHandle::FORWARD;
-	material.setUniform(
-		"albedo",
-		albedo != TextureHandle::UNASSIGNED ? albedo
-											: TextureHandle::DEFAULT_ALBEDO
-	);
-	material.setUniform(
-		"normal",
-		normal != TextureHandle::UNASSIGNED ? normal
-											: TextureHandle::DEFAULT_NORMAL
-	);
+	// Albedo
 
-	material.setUniform(
-		"roughness_metallic",
-		roughnessMetallic != TextureHandle::UNASSIGNED
-			? roughnessMetallic
-			: TextureHandle::DEFAULT_ROUGHNESS_METALLIC
-	);
+	if (values.albedo != TextureHandle::UNASSIGNED)
+		material.setUniform("albedo", values.albedo);
+	else {
+		if (values.albedoColor.has_value()) {
+			material.setUniform("albedo_color", values.albedoColor.value());
+			components = PBRComponents::ALBEDO_VALUE;
+		}
+		material.setUniform("albedo", TextureHandle::DEFAULT_ALBEDO);
+	}
 
-	material.setUniform(
-		"emission",
-		emission != TextureHandle::UNASSIGNED ? emission
-											  : TextureHandle::DEFAULT_EMISSION
-	);
+	// Normal
+	if (values.normal != TextureHandle::UNASSIGNED)
+		material.setUniform("normal", values.normal);
+	else
+		material.setUniform("normal", TextureHandle::DEFAULT_NORMAL);
+
+	// Roughness - Metallic
+
+	if (values.roughnessMetallic != TextureHandle::UNASSIGNED)
+		material.setUniform("roughness_metallic", values.roughnessMetallic);
+	else {
+		if (values.roughnessValue.has_value()) {
+			material.setUniform(
+				"roughness_value", values.roughnessValue.value()
+			);
+			components = components | PBRComponents::ROUGHNESS_VALUE;
+		}
+		if (values.metallicValue.has_value()) {
+			material.setUniform("metallic_value", values.metallicValue.value());
+			components = components | PBRComponents::METALLIC_VALUE;
+		}
+		material.setUniform(
+			"roughness_metallic", TextureHandle::DEFAULT_ROUGHNESS_METALLIC
+		);
+	}
+
+	// Emissive
+
+	if (values.emission != TextureHandle::UNASSIGNED)
+		material.setUniform("emission", values.emission);
+	else {
+		if (values.emissionValue.has_value()) {
+			material.setUniform("emission_value", values.emissionValue.value());
+			components = components | PBRComponents::EMISSION_VALUE;
+		}
+		material.setUniform("emission", TextureHandle::DEFAULT_EMISSION);
+	}
+
+	material.setUniform("components", (int)components);
 	material.setUniform("projection_view", UBOHandle::PROJECTION_VIEW);
-
 	return material;
 }
 

@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <string>
 
+#include "Material.h"
 #include "ResourceManager.h"
 #include "TextureManager.h"
 #include "glm/geometric.hpp"
@@ -173,7 +174,11 @@ std::unordered_map<uint32_t, MaterialHandle> loadMaterials(
 	std::unordered_map<aiString*, TextureHandle> textureCache;
 
 	for (uint32_t i = 0; i < scene.mNumMaterials; i++) {
-		TextureLoadSpecs specs { .material = scene.mMaterials[i],
+		aiMaterial* materialInstance = scene.mMaterials[i];
+
+		PBRMaterialValues values;
+
+		TextureLoadSpecs specs { .material = materialInstance,
 			                     .type = aiTextureType_DIFFUSE,
 
 			                     .textureManager =
@@ -183,20 +188,39 @@ std::unordered_map<uint32_t, MaterialHandle> loadMaterials(
 
 		specs.type = aiTextureType_DIFFUSE;
 
-		auto diffuse = loadTexture(specs);
-		specs.type = aiTextureType_NORMALS;
+		values.albedo = loadTexture(specs);
+		aiColor4D diffuseColor;
 
-		auto normal = loadTexture(specs);
+		if (materialInstance->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor) ==
+		    AI_SUCCESS)
+			values.albedoColor = glm::vec4(
+				diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a
+			);
+
+		specs.type = aiTextureType_NORMALS;
+		values.normal = loadTexture(specs);
 
 		specs.type = aiTextureType_EMISSION_COLOR;
-
-		auto emissive = loadTexture(specs);
+		values.emission = loadTexture(specs);
+		float emissiveValue;
+		if (materialInstance->Get(
+				AI_MATKEY_EMISSIVE_INTENSITY, emissiveValue
+			) == AI_SUCCESS)
+			values.emissionValue = emissiveValue;
 
 		specs.type = aiTextureType_UNKNOWN;
-		auto metallic = loadTexture(specs);
+		values.roughnessMetallic = loadTexture(specs);
+		float metallicValue;
+		if (materialInstance->Get(AI_MATKEY_METALLIC_FACTOR, metallicValue) ==
+		    AI_SUCCESS)
+			values.metallicValue = metallicValue;
 
-		Material material =
-			Material::StandardPBRMaterial(diffuse, normal, metallic, emissive);
+		float roughnessValue;
+		if (materialInstance->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessValue) ==
+		    AI_SUCCESS)
+			values.roughnessValue = roughnessValue;
+
+		Material material = Material::StandardPBRMaterial(values);
 		MaterialHandle handle = resourceManager.registerMaterial(material);
 
 		materialCache.insert({ i, handle });
