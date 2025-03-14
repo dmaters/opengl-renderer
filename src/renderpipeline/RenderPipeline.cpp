@@ -112,23 +112,47 @@ TextureHandle RenderPipeline::render(RenderSpecifications& specs) {
 	);
 	m_colorForwardFB.bind();
 
+	renderFullscreenPass(m_skyboxMaterial);
+
 	Frustum frustum = specs.scene.m_camera.getFrustum(
 		glm::vec2(0.1, 10000), (float)specs.resolution.x / specs.resolution.y
 	);
-	std::vector<std::reference_wrapper<Primitive>> primitives =
-		specs.scene.getPrimitives([frustum](Primitive& primitive) {
-			return frustum.isSphereInFrustum(
-				primitive.getPosition(), primitive.getSize()
-			);
+	ResourceManager& resourceManager = *m_resourceManager;
+	std::vector<std::reference_wrapper<Primitive>> opaquePrimitives =
+		specs.scene.getPrimitives([frustum,
+	                               resourceManager](Primitive& primitive) {
+			const Material& material =
+				resourceManager.getMaterial(primitive.getMaterialIndex());
+			return !material.getTrasparencyFlag() &&
+		           frustum.isSphereInFrustum(
+					   primitive.getPosition(), primitive.getSize()
+				   );
 		});
 
 	RenderPassSpecs simpleRenderPass {
-		.primitives = primitives,
+		.primitives = opaquePrimitives,
 		.scene = specs.scene,
 	};
 
-	renderFullscreenPass(m_skyboxMaterial);
 	renderSubpass(simpleRenderPass);
+
+	std::vector<std::reference_wrapper<Primitive>> trasparentPrimitives =
+		specs.scene.getPrimitives([frustum,
+	                               resourceManager](Primitive& primitive) {
+			const Material& material =
+				resourceManager.getMaterial(primitive.getMaterialIndex());
+			return material.getTrasparencyFlag() &&
+		           frustum.isSphereInFrustum(
+					   primitive.getPosition(), primitive.getSize()
+				   );
+		});
+
+	RenderPassSpecs trasparentPass {
+		.primitives = trasparentPrimitives,
+		.scene = specs.scene,
+	};
+
+	renderSubpass(trasparentPass);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -194,20 +218,24 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 
 	for (int i = 0; i < lights.size(); i++) {
 		Light& light = lights[i];
-		// Frustum lightFrustum = Frustum(
-		// 	light.getPosition(),
-		// 	glm::vec3(0, 0, -1) * light.getOrientation(),
-		// 	glm::vec2(0.1, light.getFalloff()),
-		// 	90,
-		// 	1
-		// );
-
-		auto primitives = specs.scene.getPrimitives([](Primitive& primitive) {
-			return true;
-			// return lightFrustum.isSphereInFrustum(
-			// 	primitive.getPosition(), primitive.getSize()
-			// );
-		});
+		Frustum lightFrustum = Frustum(
+			light.getPosition(),
+			glm::vec3(0, 0, -1) * light.getOrientation(),
+			glm::vec2(0.1, light.getFalloff()),
+			90,
+			1
+		);
+		const ResourceManager& resourceManager = *m_resourceManager;
+		auto primitives =
+			specs.scene.getPrimitives([lightFrustum,
+		                               resourceManager](Primitive& primitive) {
+				const Material& material =
+					resourceManager.getMaterial(primitive.getMaterialIndex());
+				return !material.getTrasparencyFlag() &&
+			           lightFrustum.isSphereInFrustum(
+						   primitive.getPosition(), primitive.getSize()
+					   );
+			});
 
 		if (light.getShadowMap() == TextureHandle::UNASSIGNED) {
 			TextureManager::TextureSpecification shadowMapSpecs {
@@ -247,13 +275,17 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 
 	for (int i = 0; i < lights.size(); i++) {
 		Light& light = lights[i];
-
+		ResourceManager& resourceManager = *m_resourceManager;
 		std::vector<std::reference_wrapper<Primitive>> primitives =
-			specs.scene.getPrimitives([light](Primitive& primitive) {
-				return glm::length(
+			specs.scene.getPrimitives([light,
+		                               resourceManager](Primitive& primitive) {
+				const Material& material =
+					resourceManager.getMaterial(primitive.getMaterialIndex());
+				return !material.getTrasparencyFlag() &&
+			           glm::length(
 						   light.getPosition() - primitive.getPosition()
 					   ) + primitive.getSize() <
-			           light.getFalloff();
+			               light.getFalloff();
 			});
 
 		Material& currentMaterial = light.getType() == Light::Type::Point
@@ -281,11 +313,14 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 }
 
 void RenderPipeline::renderFullscreenPass(MaterialHandle handle) {
+	if (m_quadVao == 0) glGenVertexArrays(1, &m_quadVao);
+
 	Material& material = m_resourceManager->getMaterial(handle);
 	material.bind(*m_resourceManager);
 
 	glDepthMask(GL_FALSE);
 	glDisable(GL_DEPTH_TEST);
+	glBindVertexArray(m_quadVao);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);

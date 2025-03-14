@@ -44,6 +44,9 @@ public:
 	inline Material& getMaterial(MaterialHandle handle) {
 		return m_materials.at(handle);
 	}
+	inline const Material& getMaterial(MaterialHandle handle) const {
+		return m_materials.at(handle);
+	}
 
 	ProgramHandle registerProgram(
 		Program::Stages stages, ProgramHandle handle = ProgramHandle::UNASSIGNED

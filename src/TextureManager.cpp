@@ -257,18 +257,32 @@ void TextureManager::setupDefaultTextures() {
 	);
 }
 
-GLenum channelsToFormat(int channels) {
+void channelsToFormat(
+	int channels, GLenum& dataFormat, GLenum& internalFormat
+) {
 	switch (channels) {
 		case 1:
-			return GL_RED;
+			dataFormat = GL_RED;
+			internalFormat = GL_R8;
+			break;
 		case 2:
-			return GL_RG;
+			dataFormat = GL_RG;
+			internalFormat = GL_RG8;
+			break;
+
 		case 3:
-			return GL_RGB;
+			dataFormat = GL_RGB;
+			internalFormat = GL_RGB8;
+			break;
+
 		case 4:
-			return GL_RGBA;
+			dataFormat = GL_RGBA;
+			internalFormat = GL_RGBA8;
+			break;
+
 		default:
-			return GL_RGBA;
+			dataFormat = GL_RGBA;
+			internalFormat = GL_RGBA8;
 	}
 }
 
@@ -310,19 +324,22 @@ TextureHandle TextureManager::loadTexture(
 		stbi_set_flip_vertically_on_load(1);
 		data = loadData(path, width, height, channels);
 	}
+	GLenum dataFormat, internalFormat;
+	channelsToFormat(channels, dataFormat, internalFormat);
 
-	GLenum format = channelsToFormat(channels);
-
-	Texture definition = { .width = width, .height = height };
+	Texture definition = {
+		.format = internalFormat,
+		.width = width,
+		.height = height,
+	};
 	if (isCubemap) {
 		definition.wrapping = GL_CLAMP_TO_EDGE;
 		definition.type = GL_TEXTURE_CUBE_MAP;
-		// definition.depth = 6;
 	}
 
 	TextureManager::TextureSpecification specs {
 		.definition = definition,
-		.data = TextureManager::TextureData { .format = format,
+		.data = TextureManager::TextureData { .format = dataFormat,
                                              .encoding = GL_UNSIGNED_BYTE,
                                              .data = data }
 	};

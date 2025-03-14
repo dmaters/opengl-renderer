@@ -80,7 +80,7 @@ void Application::run(std::filesystem::path scenePath) {
 		                     .position = glm::vec3(0, 300, 0),
 		                     .direction = glm::vec3(0, -1, 0),
 		                     .color = glm::vec3(1, 1, 1),
-		                     .intensity = 10 };
+		                     .intensity = 100 };
 
 	double previousTime = glfwGetTime();
 	bool toggleSpeed = false;
@@ -200,7 +200,7 @@ static void GLAPIENTRY debugCallback(
 	const void* userParam
 ) {
 	if (type == GL_DEBUG_TYPE_ERROR) {
-		std::cout << "Error:" << message << std::endl;
+		std::cerr << "Error:" << message << std::endl;
 	} else {
 		std::cout << message << std::endl;
 	}

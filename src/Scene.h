@@ -8,11 +8,11 @@
 #include <vector>
 
 #include "Camera.h"
-#include "Frustum.hpp"
 #include "Light.h"
 #include "Node.h"
 #include "Primitive.h"
 #include "scene/LightDescription.h"
+
 
 class Scene {
 public:
@@ -27,7 +27,6 @@ public:
 	friend class SceneLoader;
 
 public:
-	Scene();
 	inline Camera& getCamera() { return m_camera; }
 	void addLight(LightDescription& desc);
 

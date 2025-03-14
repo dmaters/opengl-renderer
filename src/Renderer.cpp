@@ -24,10 +24,7 @@ Renderer::Renderer(
 ) :
 	m_resourceManager(resourceManager),
 	m_renderPipeline(std::make_unique<RenderPipeline>(m_resourceManager)),
-	m_bloom(std::make_unique<HDRBloom>(m_resourceManager)),
-	m_quadMaterial(Program::Stages {
-		.vertex = Program::DefaultPrograms::QUAD::VERTEX,
-		.fragment = Program::DefaultPrograms::QUAD::FRAGMENT }) {
+	m_bloom(std::make_unique<HDRBloom>(m_resourceManager)) {
 	setResolution(width, height);
 	glEnable(GL_BLEND);
 
@@ -70,17 +67,4 @@ void Renderer::setResolution(int width, int height) {
 	m_projection = glm::perspective(
 		glm::radians(60.0f), (float)width / (float)height, 0.1f, 10000.0f
 	);
-}
-
-void Renderer::drawQuad(Texture& texture) {
-	if (m_quadVAO == 0) {
-		glGenVertexArrays(1, &m_quadVAO);
-	}
-
-	glDisable(GL_DEPTH_TEST);
-	glBindVertexArray(m_quadVAO);
-	m_quadMaterial.setUniform("u_Texture", texture);
-	m_quadMaterial.bind();
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-	glEnable(GL_DEPTH_TEST);
 }

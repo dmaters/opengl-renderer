@@ -152,7 +152,7 @@ void main() {
 		brdf += shadow * irradiance * lights[i].color.xyz * lights[i].color.w /
 		        (pow(length(light_dir), 2) * 4 * PI);
 	}
-	FragColor = vec4(brdf, 1.);
+	FragColor = vec4(brdf, getAlbedo(TexCoords).a);
 
 	// FragColor = vec4(color.xyz, 1);
 	//  ragColor = texture(albedo, TexCoords);

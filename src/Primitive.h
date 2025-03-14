@@ -31,5 +31,5 @@ public:
 	inline const glm::mat4& getModelMatrix() const { return m_modelMatrix; }
 	inline MaterialHandle getMaterialIndex() const { return m_material; }
 	inline const VertexArray& getVertexArray() const { return m_vertexArray; }
-	inline const float getSize() const { return m_size; }
+	inline float getSize() const { return m_size; }
 };

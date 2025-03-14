@@ -65,6 +65,7 @@ private:
 
 	std::map<std::string, UniformDataValue> m_uniformValues;
 	ProgramHandle m_program;
+	bool m_trasparency = false;
 
 public:
 	void bind(ResourceManager& allocator);
@@ -81,4 +82,9 @@ public:
 	}
 
 	inline ProgramHandle getProgram() const { return m_program; }
+
+	inline void setTrasparencyFlag(bool trasparency) {
+		m_trasparency = trasparency;
+	}
+	bool getTrasparencyFlag() const { return m_trasparency; }
 };

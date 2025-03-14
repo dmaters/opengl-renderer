@@ -33,6 +33,8 @@ private:
 	UBOHandle m_sceneLightUBO;
 	UBOHandle m_lightsUBO;
 
+	GLuint m_quadVao = 0;
+
 	void renderShadowMap(Scene& scene);
 
 	void setupShadowMapPass();

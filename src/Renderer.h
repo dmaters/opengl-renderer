@@ -21,9 +21,6 @@ private:
 
 	int m_width, m_height;
 
-	GLuint m_quadVAO = 0;
-	Program m_quadMaterial;
-
 public:
 	Renderer(
 		int width, int height, std::shared_ptr<ResourceManager> resourceManager
@@ -31,6 +28,4 @@ public:
 
 	void setResolution(int width, int height);
 	void render(Scene& scene);
-
-	void drawQuad(Texture& texture);
 };

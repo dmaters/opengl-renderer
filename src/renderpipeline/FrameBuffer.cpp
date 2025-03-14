@@ -1,5 +1,8 @@
 #include "FrameBuffer.h"
 
+#include <array>
+#include <cassert>
+
 #include "Resources.h"
 #include "TextureManager.h"
 #include "glad/glad.h"
@@ -12,7 +15,12 @@ FrameBuffer FrameBuffer::getShadowMapFB(
 	fb.m_resolution = resolution;
 	glCreateFramebuffers(1, &fb.m_framebuffer);
 
+	glNamedFramebufferReadBuffer(1, GL_NONE);
+	glNamedFramebufferDrawBuffers(
+		1, 1, std::array<GLenum, 1>({ GL_NONE }).data()
+	);
 	fb.m_clearMask = GL_DEPTH_BUFFER_BIT;
+
 	return fb;
 }
 

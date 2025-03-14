@@ -15,8 +15,6 @@
 #include "Primitive.h"
 #include "scene/LightDescription.h"
 
-Scene::Scene() {}
-
 void Scene::addLight(LightDescription& desc) {
 	Light light((Light::Type)desc.type);
 

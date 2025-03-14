@@ -63,7 +63,9 @@ glm::mat4 getBaseTransform(aiNode& node, const aiScene& scene) {
 }
 
 Primitive loadMesh(
-	aiMesh& mesh, std::unordered_map<uint32_t, MaterialHandle>& materialCache
+	aiMesh& mesh,
+	std::unordered_map<uint32_t, MaterialHandle>& materialCache,
+	ResourceManager& resourceManager
 ) {
 	std::vector<unsigned char> vertices;
 	float colliderSize = 0;
@@ -116,9 +118,10 @@ struct SceneLoadSpecs {
 	std::unordered_map<uint32_t, MaterialHandle> materialCache;
 	Scene& baseScene;
 	const aiScene& importedScene;
+	ResourceManager& resourceManager;
 };
 
-void loadScene(aiNode& root, SceneLoadSpecs& specs) {
+void loadScene(aiNode& root, SceneLoadSpecs specs) {
 	if (root.mNumMeshes > 0) {
 		glm::mat4 transform = getBaseTransform(root, specs.importedScene);
 
@@ -135,7 +138,8 @@ void loadScene(aiNode& root, SceneLoadSpecs& specs) {
 		for (uint32_t i = 0; i < root.mNumMeshes; i++) {
 			specs.baseScene.m_primitives.push_back(loadMesh(
 				*specs.importedScene.mMeshes[root.mMeshes[i]],
-				specs.materialCache
+				specs.materialCache,
+				specs.resourceManager
 			));
 		}
 	}
@@ -221,6 +225,11 @@ std::unordered_map<uint32_t, MaterialHandle> loadMaterials(
 			values.roughnessValue = roughnessValue;
 
 		Material material = Material::StandardPBRMaterial(values);
+		Texture& texture =
+			resourceManager.getTextureManager().getTexture(values.albedo);
+
+		if (texture.format == GL_RGBA8) material.setTrasparencyFlag(true);
+
 		MaterialHandle handle = resourceManager.registerMaterial(material);
 
 		materialCache.insert({ i, handle });
@@ -240,13 +249,16 @@ Scene SceneLoader::Load(
 	auto materialCache = loadMaterials(*import, folderPath, resourceManager);
 
 	Scene scene;
-	SceneLoadSpecs specs {
-		.materialCache = materialCache,
-		.baseScene = scene,
-		.importedScene = *import,
 
-	};
-	loadScene(*import->mRootNode, specs);
+	loadScene(
+		*import->mRootNode,
+		{
+			.materialCache = materialCache,
+			.baseScene = scene,
+			.importedScene = *import,
+			.resourceManager = resourceManager,
+		}
+	);
 
 	float lowbound = 0, highbound = 0;
 	for (Primitive& primitive : scene.m_primitives) {
