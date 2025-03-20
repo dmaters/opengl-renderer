@@ -30,11 +30,7 @@ public:
 	Light(Type type) : m_type(type) {}
 	inline void setColor(glm::vec3 color) { m_color = color; }
 	inline glm::vec3 getColor() const { return m_color; }
-	inline void setIntensity(float intensity) {
-		m_intensity = intensity;
-		if (m_type != Type::Directional)
-			m_falloff = sqrt(m_intensity / (0.00001 * 4 * std::numbers::pi));
-	}
+	inline void setIntensity(float intensity) { m_intensity = intensity; }
 	inline float getIntensity() const { return m_intensity; }
 
 	inline float getFalloff() const { return m_falloff; }
@@ -51,7 +47,12 @@ public:
 		switch (m_type) {
 			case Type::Directional:
 				return glm::ortho(
-					-5000.0f, 5000.0f, -5000.0f, 5000.0f, 0.1f, m_falloff
+					-m_falloff / 2,
+					m_falloff / 2,
+					-m_falloff / 2,
+					m_falloff / 2,
+					0.1f,
+					m_falloff
 				);
 			case Type::Point:
 				return glm::perspective(

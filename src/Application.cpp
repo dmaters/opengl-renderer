@@ -80,7 +80,7 @@ void Application::run(std::filesystem::path scenePath) {
 		                     .position = glm::vec3(0, 300, 0),
 		                     .direction = glm::vec3(0, -1, 0),
 		                     .color = glm::vec3(1, 1, 1),
-		                     .intensity = 100 };
+		                     .intensity = 50 };
 
 	double previousTime = glfwGetTime();
 	bool toggleSpeed = false;
@@ -90,16 +90,16 @@ void Application::run(std::filesystem::path scenePath) {
 
 	Camera& camera = scene.getCamera();
 	camera.setPosition(glm::vec3(0, 0, 20));
-
-	glm::mat3 cameraOrientation = glm::mat3(1);
-	cameraOrientation[2] = -cameraOrientation[2];
-	camera.setOrientation(cameraOrientation);
+	glm::mat3 orientation = glm::mat3(1);
+	orientation[0] = -orientation[0];
+	orientation[2] = -orientation[2];
+	camera.setOrientation(orientation);
 
 	LightDescription pointLightDesc { .type = LightDescription::Type::Point,
 		                              .position = glm::vec3(0, 0, 0),
 
 		                              .color = glm::vec3(1, 1, 1),
-		                              .intensity = 1500 };
+		                              .intensity = 500 };
 
 	scene.addLight(pointLightDesc);
 

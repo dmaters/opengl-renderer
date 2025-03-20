@@ -7,7 +7,6 @@
 #include <memory>
 
 #include "FrameBuffer.h"
-#include "RenderFeatures.h"
 #include "RenderPass.h"
 #include "ResourceManager.h"
 #include "Resources.h"
@@ -34,6 +33,8 @@ private:
 	UBOHandle m_lightsUBO;
 
 	GLuint m_quadVao = 0;
+
+	bool m_shadowmapsGenerated = false;
 
 	void renderShadowMap(Scene& scene);
 
@@ -65,33 +66,33 @@ struct RenderPipeline::CubemapTrasforms {
 		transforms.rotations[0] = glm::lookAt(
 			glm::vec3(0.0, 0.0, 0.0),
 			glm::vec3(1.0, 0.0, 0.0),
-			glm::vec3(0.0, -1.0, 0.0)
+			glm::vec3(0.0, 1.0, 0.0)
 		);
 
 		transforms.rotations[1] = glm::lookAt(
 			glm::vec3(0.0, 0.0, 0.0),
 			glm::vec3(-1.0, 0.0, 0.0),
-			glm::vec3(0.0, -1.0, 0.0)
+			glm::vec3(0.0, 1.0, 0.0)
 		);
 		transforms.rotations[2] = glm::lookAt(
 			glm::vec3(0.0, 0.0, 0.0),
-			glm::vec3(0.0, 1.0, 0.0),
+			glm::vec3(0.0, -1.0, 0.0),
 			glm::vec3(0.0, 0.0, 1.0)
 		);
 		transforms.rotations[3] = glm::lookAt(
 			glm::vec3(0.0, 0.0, 0.0),
-			glm::vec3(0, -1.0, 0.0),
-			glm::vec3(0.0, 0.0, -1.0)
+			glm::vec3(0, 1.0, 0.0),
+			glm::vec3(0.0, 0.0, 1.0)
 		);
 		transforms.rotations[4] = glm::lookAt(
 			glm::vec3(0.0, 0.0, 0.0),
 			glm::vec3(0.0, 0.0, 1.0),
-			glm::vec3(0.0, -1.0, 0.0)
+			glm::vec3(0.0, 1.0, 0.0)
 		);
 		transforms.rotations[5] = glm::lookAt(
 			glm::vec3(0.0, 0.0, 0.0),
 			glm::vec3(0.0, 0.0, -1.0),
-			glm::vec3(0.0, -1.0, 0.0)
+			glm::vec3(0.0, 1.0, 0.0)
 		);
 
 		return transforms;

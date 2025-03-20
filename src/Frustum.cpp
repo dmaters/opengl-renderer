@@ -65,8 +65,15 @@ Frustum::Frustum(
 	float fovDeg,
 	float aspectRatio
 ) {
-	glm::vec3 right = glm::normalize(glm::vec3(direction.z, 0, direction.x));
-	glm::vec3 up = glm::normalize(glm::cross(right, direction));
+	glm::vec3 right, up;
+	if (abs(glm::dot(direction, glm::vec3(0, 1, 0))) == 1) {
+		up = glm::vec3(0.0f, 0.0f, direction.z);
+		right = glm::normalize(glm::cross(up, direction));
+
+	} else {
+		right = glm::normalize(glm::vec3(direction.z, 0, direction.x));
+		up = glm::normalize(glm::cross(right, direction));
+	}
 
 	float vertical = std::sin(glm::radians(fovDeg * 0.5));
 	float horizontal = vertical * aspectRatio;

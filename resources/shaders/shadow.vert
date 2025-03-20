@@ -24,6 +24,4 @@ void main() {
 	gl_Position = lights[current_light].light_projection *
 	              lights[current_light].light_tranformation * model *
 	              vec4(aPos, 1.0);
-
-	FragPos = gl_Position;
 }

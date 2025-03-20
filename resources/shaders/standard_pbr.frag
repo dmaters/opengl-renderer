@@ -41,10 +41,29 @@ layout(std140, binding = 3) uniform LightsData {
 
 layout(location = 3) uniform samplerCube skybox;
 
-float shadowPercentageOmni(int light) {
-	vec4 position = lights[light].light_tranformation * FragPos;
+float nonLinearToLinearDepth(float nonLinearDepth, mat4 projectionMatrix) {
+	float a = projectionMatrix[2][2];
+	float b = projectionMatrix[3][2];
 
-	return texture(samplerCubeShadow(lights[light].shadow_map), position);
+	float near = -b / (a - 1.0);
+	float far = -b / (a + 1.0);
+
+	return (2.0 * near * far) / (far + near - nonLinearDepth * (far - near));
+}
+float shadowPercentageOmni(int light) {
+	mat4 lightTransform = lights[light].light_tranformation;
+	vec4 lightSpacePos = lightTransform * FragPos;
+
+	float depth =
+		texture(
+			samplerCube(lights[light].shadow_map), normalize(lightSpacePos.xyz)
+		)
+			.r;
+	float linearDepth =
+		nonLinearToLinearDepth(depth, lights[light].light_projection);
+	float currentDepth = length(lightSpacePos.xyz);
+
+	return (currentDepth - 0.0005) > -linearDepth ? 1.0 : 0;
 }
 
 float shadowPercentage(int light) {
@@ -52,9 +71,7 @@ float shadowPercentage(int light) {
 	                         lights[light].light_tranformation * FragPos;
 
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-
 	projCoords = projCoords * 0.5 + 0.5;
-
 	float depth = texture(sampler2D(lights[light].shadow_map), projCoords.xy).r;
 	float currentDepth = projCoords.z;
 
@@ -138,22 +155,19 @@ void main() {
 
 	for (int i = 0; i < count; i++) {
 		float shadow;
+		mat4 light_mat = inverse(lights[i].light_tranformation);
 		vec3 light_dir;
-
 		if (is_omni_shadow(i)) {
 			shadow = 1 - shadowPercentageOmni(i);
-			light_dir = lights[i].light_tranformation[3].xyz - FragPos.xyz;
+			light_dir = light_mat[3].xyz - FragPos.xyz;
 
 		} else {
 			shadow = 1 - shadowPercentage(i);
-			light_dir = vec3(lights[i].light_tranformation * vec4(0, 0, -1, 0));
+			light_dir = light_mat[2].xyz;
 		}
 		vec3 irradiance = microfacetBRDF(TexCoords, view_dir, light_dir);
 		brdf += shadow * irradiance * lights[i].color.xyz * lights[i].color.w /
 		        (pow(length(light_dir), 2) * 4 * PI);
 	}
 	FragColor = vec4(brdf, getAlbedo(TexCoords).a);
-
-	// FragColor = vec4(color.xyz, 1);
-	//  ragColor = texture(albedo, TexCoords);
 }

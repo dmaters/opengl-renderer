@@ -13,11 +13,9 @@
 #include "Primitive.h"
 #include "scene/LightDescription.h"
 
-
 class Scene {
 public:
-	float m_lowBoundHeight = 0.f;
-	float m_highBoundHeight = 0.f;
+	float m_bounds = 0;
 
 	std::vector<Light> m_lights;
 	std::vector<Primitive> m_primitives;

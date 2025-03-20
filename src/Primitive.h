@@ -12,7 +12,6 @@ public:
 	};
 
 private:
-	glm::mat4 m_modelMatrix;
 	VertexArray m_vertexArray;
 	MaterialHandle m_material;
 	float m_size = 0;
@@ -23,12 +22,8 @@ public:
 	) :
 		m_vertexArray(vertexArray), m_material(materialHandle), m_size(size) {}
 
-	inline void setModelMatrix(glm::mat4 modelMatrix) {
-		m_modelMatrix = modelMatrix;
-	}
 	inline void setSize(float size) { m_size = size; }
 
-	inline const glm::mat4& getModelMatrix() const { return m_modelMatrix; }
 	inline MaterialHandle getMaterialIndex() const { return m_material; }
 	inline const VertexArray& getVertexArray() const { return m_vertexArray; }
 	inline float getSize() const { return m_size; }

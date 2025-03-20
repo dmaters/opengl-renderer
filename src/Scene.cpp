@@ -6,13 +6,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <iostream>
 #include <vector>
 
-#include "Frustum.hpp"
 #include "Light.h"
 #include "Node.h"
 #include "Primitive.h"
+#include "glm/ext/matrix_float3x3.hpp"
 #include "scene/LightDescription.h"
 
 void Scene::addLight(LightDescription& desc) {
@@ -22,23 +21,25 @@ void Scene::addLight(LightDescription& desc) {
 	light.setIntensity(desc.intensity);
 	light.setPosition(desc.position);
 
-	if (desc.direction == glm::vec3(0.0f, -1.0f, 0.0f) ||
-	    desc.direction == glm::vec3(0.0f, 1.0f, 0.0f)) {
-		light.m_orientation = glm::mat4_cast(glm::angleAxis(
-			glm::sign(desc.direction.y) * glm::pi<float>() / 2,
-			glm::vec3(1.0f, 0.0f, 0.0f)
-		));
-	} else if (desc.direction != glm::vec3(0.0f, 0.0f, 0.0f)) {
-		light.m_orientation = glm::lookAt(
-			desc.position, desc.position + desc.direction, glm::vec3(0, 1, 0)
-		);
+	glm::vec3 right, up;
+
+	if (abs(glm::dot(desc.direction, glm::vec3(0, 1, 0))) == 1) {
+		up = glm::vec3(0.0f, 0.0f, desc.direction.y);
+		right = glm::normalize(glm::cross(up, desc.direction));
+
+	} else {
+		right =
+			glm::normalize(glm::vec3(desc.direction.z, 0, desc.direction.x));
+		up = glm::normalize(glm::cross(right, desc.direction));
 	}
+	light.m_orientation = glm::mat3(right, up, desc.direction);
 
 	if (light.getType() == Light::Type::Directional) {
-		light.setFalloff(m_highBoundHeight - m_lowBoundHeight);
-		desc.position.y = m_highBoundHeight;
-		light.setPosition(desc.position);
+		light.m_position = -desc.direction * m_bounds;
+		light.setFalloff(m_bounds * 2);
 	}
+	if (light.getType() == Light::Type::Point)
+		light.m_orientation = glm::mat3(1);
 
 	m_lights.push_back(light);
 }

@@ -40,7 +40,7 @@ void Renderer::render(Scene& scene) {
 
 	Camera& camera = scene.getCamera();
 
-	m_view = camera.getTransformationMatrix();
+	m_view = camera.getTransformationMatrix(true);
 
 	Primitive::ViewProjectionUniformBuffer projectionViewUBOHandle = {
 		m_view, m_projection

@@ -104,8 +104,11 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 }
 
 TextureHandle RenderPipeline::render(RenderSpecifications& specs) {
-	m_shadowMapFB.bind();
-	renderShadowMaps(specs);
+	if (!m_shadowmapsGenerated) {
+		m_shadowMapFB.bind();
+		renderShadowMaps(specs);
+		m_shadowmapsGenerated = true;
+	}
 
 	m_colorForwardFB.setResolution(
 		specs.resolution, m_resourceManager->getTextureManager()
@@ -192,15 +195,7 @@ void RenderPipeline::renderSubpass(RenderPassSpecs& renderPassSpecs) {
 		auto vertexArray = primitive.getVertexArray();
 		vertexArray.bind();
 
-		glm::mat4 translation =
-			glm::translate(glm::mat4(1), primitive.getPosition());
-
-		glm::mat4 scale = glm::scale(glm::mat4(1), primitive.getScale());
-		glm::mat4 rotation = primitive.getOrientation();
-
-		glm::mat4 model = translation * rotation * scale;
-
-		program.setUniform("model", model);
+		program.setUniform("model", primitive.getTransformationMatrix());
 
 		glDrawElements(
 			GL_TRIANGLES,
@@ -218,24 +213,6 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 
 	for (int i = 0; i < lights.size(); i++) {
 		Light& light = lights[i];
-		Frustum lightFrustum = Frustum(
-			light.getPosition(),
-			glm::vec3(0, 0, -1) * light.getOrientation(),
-			glm::vec2(0.1, light.getFalloff()),
-			90,
-			1
-		);
-		const ResourceManager& resourceManager = *m_resourceManager;
-		auto primitives =
-			specs.scene.getPrimitives([lightFrustum,
-		                               resourceManager](Primitive& primitive) {
-				const Material& material =
-					resourceManager.getMaterial(primitive.getMaterialIndex());
-				return !material.getTrasparencyFlag() &&
-			           lightFrustum.isSphereInFrustum(
-						   primitive.getPosition(), primitive.getSize()
-					   );
-			});
 
 		if (light.getShadowMap() == TextureHandle::UNASSIGNED) {
 			TextureManager::TextureSpecification shadowMapSpecs {
@@ -258,7 +235,7 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 
 		lightUBO.lights[i] = Light::LightUniform {
 			.color = glm::vec4(light.getColor(), light.getIntensity()),
-			.light_tranformation = light.getTransformationMatrix(),
+			.light_tranformation = light.getTransformationMatrix(true),
 			.light_projection = light.getProjectionMatrix(),
 			.shadow_map = m_resourceManager->getTextureManager()
 			                  .getTexture(light.getShadowMap())
@@ -275,18 +252,10 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 
 	for (int i = 0; i < lights.size(); i++) {
 		Light& light = lights[i];
-		ResourceManager& resourceManager = *m_resourceManager;
-		std::vector<std::reference_wrapper<Primitive>> primitives =
-			specs.scene.getPrimitives([light,
-		                               resourceManager](Primitive& primitive) {
-				const Material& material =
-					resourceManager.getMaterial(primitive.getMaterialIndex());
-				return !material.getTrasparencyFlag() &&
-			           glm::length(
-						   light.getPosition() - primitive.getPosition()
-					   ) + primitive.getSize() <
-			               light.getFalloff();
-			});
+
+		auto primitives = specs.scene.getPrimitives([](Primitive& primitive) {
+			return true;
+		});
 
 		Material& currentMaterial = light.getType() == Light::Type::Point
 		                                ? omniShadowmapMaterial
@@ -298,6 +267,9 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 			light.getShadowMap(),
 			m_resourceManager->getTextureManager()
 		);
+
+		glClear(GL_DEPTH_BUFFER_BIT);
+
 		RenderPassSpecs shadowMapPass {
 			.overrideMaterial = light.getType() != Light::Type::Point
 			                        ? m_shadowMapMaterial

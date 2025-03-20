@@ -182,13 +182,14 @@ std::unordered_map<uint32_t, MaterialHandle> loadMaterials(
 
 		PBRMaterialValues values;
 
-		TextureLoadSpecs specs { .material = materialInstance,
-			                     .type = aiTextureType_DIFFUSE,
+		TextureLoadSpecs specs {
+			.material = materialInstance,
+			.type = aiTextureType_DIFFUSE,
 
-			                     .textureManager =
-			                         resourceManager.getTextureManager(),
-			                     .cache = textureCache,
-			                     .folderPath = texturePath };
+			.textureManager = resourceManager.getTextureManager(),
+			.cache = textureCache,
+			.folderPath = texturePath,
+		};
 
 		specs.type = aiTextureType_DIFFUSE;
 
@@ -270,8 +271,8 @@ Scene SceneLoader::Load(
 			highbound
 		);
 	}
-	scene.m_lowBoundHeight = lowbound;
-	scene.m_highBoundHeight = highbound;
+
+	scene.m_bounds = highbound;
 
 	return scene;
 }

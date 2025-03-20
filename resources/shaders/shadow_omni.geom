@@ -21,16 +21,13 @@ layout(std140, binding = 3) uniform LightsData {
 };
 uniform int current_light;
 
-out vec4 FragPos;
-
 void main() {
 	for (int face = 0; face < 6; face++) {
 		gl_Layer = face;
 		for (int i = 0; i < 3; i++) {
-			FragPos = gl_in[i].gl_Position;
 			gl_Position = lights[current_light].light_projection *
 			              lights[current_light].light_tranformation *
-			              rotations[face] * FragPos;
+			              rotations[face] * gl_in[i].gl_Position;
 			EmitVertex();
 		}
 		EndPrimitive();

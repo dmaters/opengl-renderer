@@ -1,6 +1,5 @@
 #include "FrameBuffer.h"
 
-#include <array>
 #include <cassert>
 
 #include "Resources.h"
@@ -14,10 +13,19 @@ FrameBuffer FrameBuffer::getShadowMapFB(
 	fb.m_clearOnBind = clear;
 	fb.m_resolution = resolution;
 	glCreateFramebuffers(1, &fb.m_framebuffer);
+	TextureManager::TextureSpecification colorSpecs = {
+		.definition = {
+			.format = GL_RGB10_A2,
+			.width = resolution.x,
+			.height = resolution.y,
+		},
 
-	glNamedFramebufferReadBuffer(1, GL_NONE);
-	glNamedFramebufferDrawBuffers(
-		1, 1, std::array<GLenum, 1>({ GL_NONE }).data()
+	};
+
+	fb.setAttachment(
+		FrameBufferAttachment::COLOR0,
+		textureManager.createTexture(colorSpecs),
+		textureManager
 	);
 	fb.m_clearMask = GL_DEPTH_BUFFER_BIT;
 
