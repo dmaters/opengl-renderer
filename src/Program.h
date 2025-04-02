@@ -43,6 +43,7 @@ public:
 	void setUniform(std::string name, glm::vec2 value);
 	void setUniform(std::string name, float value);
 	void setUniform(std::string name, int value);
+	void setUniform(std::string name, unsigned int value);
 	void setUniform(std::string name, Texture& value);
 	void setUniform_const(std::string name, const Texture& value);
 

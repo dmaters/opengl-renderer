@@ -75,7 +75,7 @@ TextureHandle TextureManager::createTexture(
 
 	if (specs.data.has_value()) {
 		if (texture.type == GL_TEXTURE_CUBE_MAP) {
-			size_t faceSize = texture.width * texture.height * 4;
+			size_t faceSize = texture.width * texture.height * 4;  // 4 CHANNELS
 
 			for (int i = 0; i < 6; i++)
 
@@ -206,28 +206,30 @@ void TextureManager::setupDefaultTextures() {
 	//---------ROUGHNESS---------
 
 	data = {
+		0x00,
 		0x7F,
 		0x00,
 	};
 
-	TextureManager::TextureSpecification roughnessSpecs = {
+	TextureManager::TextureSpecification roughnessMetallicSpecs = {
 		.definition = { 
 			.filtering = GL_NEAREST,
-			.format = GL_R8,
+			.format = GL_RGB8,
             .width = 1,
             .height = 1,
+			
 		},
 
 		.data =
 			TextureManager::TextureData {
-										 .format = GL_RED,
+										 .format = GL_RGB,
 										 .encoding = GL_UNSIGNED_BYTE,
 										 .data = data,
 										 },
 	};
 
 	TextureManager::createTexture(
-		roughnessSpecs, TextureHandle::DEFAULT_ROUGHNESS_METALLIC
+		roughnessMetallicSpecs, TextureHandle::DEFAULT_ROUGHNESS_METALLIC
 	);
 
 	//---------EMISSION---------

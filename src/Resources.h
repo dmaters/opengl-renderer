@@ -24,6 +24,7 @@ struct TextureHandle : public Handle<TextureHandle> {
 	static const TextureHandle DEFAULT_NORMAL;
 	static const TextureHandle DEFAULT_ROUGHNESS_METALLIC;
 	static const TextureHandle DEFAULT_EMISSION;
+	static const TextureHandle IRRADIANCE;
 };
 
 template <typename T>

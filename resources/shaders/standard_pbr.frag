@@ -19,6 +19,8 @@ uniform float emissive_value;
 
 uniform int components;
 
+layout(bindless_sampler) uniform samplerCube irradiance_map;
+
 layout(std140, binding = 0) uniform projection_view {
 	mat4 view;
 	mat4 projection;
@@ -89,12 +91,10 @@ float distributionGGX(float NdotH, float a) {
 	return a2 / (PI * f * f);
 }
 
-// Schlick Fresnel approximation
 vec3 fresnelSchlick(float HdotV, vec3 F0) {
 	return F0 + (1.0 - F0) * pow(clamp(1.0 - HdotV, 0.0, 1.0), 5.0);
 }
 
-// Smith Geometry Function for GGX
 float geometrySmith(float NdotV, float NdotL, float a) {
 	float a2 = a * a;
 	float GGXV = NdotL * sqrt((NdotV - NdotV * a2) * NdotV + a2);
@@ -107,11 +107,11 @@ vec4 getAlbedo(vec2 uv) {
 }
 float getMetallic(vec2 uv) {
 	if ((components & 1 << 1) != 0) return metallic_value;
-	return texture(roughness_metallic, uv).y;
+	return texture(roughness_metallic, uv).b;
 }
 float getRoughness(vec2 uv) {
 	if ((components & 1 << 2) != 0) return roughness_value;
-	return texture(roughness_metallic, uv).x;
+	return texture(roughness_metallic, uv).g;
 }
 float getEmissive(vec2 uv) {
 	if ((components & 1 << 3) != 0) return emissive_value;
@@ -124,32 +124,32 @@ vec3 microfacetBRDF(vec2 uv, vec3 viewDir, vec3 lightDir) {
 	float roughness = getRoughness(uv);
 	float metallic = getMetallic(uv);
 	vec3 albedo = getAlbedo(uv).rgb;
-	// Dot products
+
 	float NdotV = max(dot(_norm, viewDir), 0.0);
 	float NdotL = max(dot(_norm, lightDir), 0.0);
 	float NdotH = max(dot(_norm, halfview), 0.0);
 	float HdotV = max(dot(halfview, viewDir), 0.0);
 
-	// Base reflectivity
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
 	float a = max(roughness * roughness, 0.002025);
 
-	// BRDF components
 	float NDF = distributionGGX(NdotH, a);
 	vec3 F = fresnelSchlick(HdotV, F0);
 	float V = geometrySmith(NdotV, NdotL, a);
 
 	vec3 specular = NDF * F * V;
 
-	vec3 diffuseColor = (1.0 - metallic) * albedo;
-	vec3 diffuse = diffuseColor / PI;
+	vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo / PI;
 
 	return (diffuse + specular) * NdotL;
 }
 
 void main() {
-	vec3 view_dir = normalize(-FragPos.xyz);
+	mat3 rotationMat = mat3(view);
+	vec3 translation = vec3(view[3]);
+	vec3 cameraPos = -transpose(rotationMat) * translation;
+	vec3 view_dir = normalize(cameraPos - FragPos.xyz);
 
 	vec3 brdf = vec3(0);
 
@@ -169,5 +169,19 @@ void main() {
 		brdf += shadow * irradiance * lights[i].color.xyz * lights[i].color.w /
 		        (pow(length(light_dir), 2) * 4 * PI);
 	}
+
+	vec3 albedo = getAlbedo(TexCoords).rgb;
+	float metallic = getMetallic(TexCoords);
+	float roughness = getRoughness(TexCoords);
+	vec3 ambientIrradiance = texture(irradiance_map, Normal).rgb;
+
+	vec3 F0 = mix(vec3(0.04), albedo, metallic);
+	vec3 F = fresnelSchlick(max(dot(Normal, view_dir), 0.0), F0);
+
+	vec3 kD = (1.0 - F) * (1.0 - metallic);
+	vec3 ambient = kD * albedo * ambientIrradiance / PI;
+
+	brdf += ambient * 4;
+
 	FragColor = vec4(brdf, getAlbedo(TexCoords).a);
 }

@@ -30,10 +30,10 @@ private:
 protected:
 public:
 	static FrameBuffer getShadowMapFB(
-		TextureManager& textureManager, glm::ivec2 resolution, bool clear
+		TextureManager& textureManager, glm::ivec2 resolution
 	);
 	static FrameBuffer getForwardFB(
-		TextureManager& textureManager, glm::ivec2 resolution, bool clear
+		TextureManager& textureManager, glm::ivec2 resolution
 	);
 
 	TextureHandle getAttachment(FrameBufferAttachment attachment) const {

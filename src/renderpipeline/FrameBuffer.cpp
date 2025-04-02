@@ -7,10 +7,10 @@
 #include "glad/glad.h"
 
 FrameBuffer FrameBuffer::getShadowMapFB(
-	TextureManager& textureManager, glm::ivec2 resolution, bool clear
+	TextureManager& textureManager, glm::ivec2 resolution
 ) {
 	FrameBuffer fb;
-	fb.m_clearOnBind = clear;
+	fb.m_clearOnBind = true;
 	fb.m_resolution = resolution;
 	glCreateFramebuffers(1, &fb.m_framebuffer);
 	TextureManager::TextureSpecification colorSpecs = {
@@ -33,10 +33,10 @@ FrameBuffer FrameBuffer::getShadowMapFB(
 }
 
 FrameBuffer FrameBuffer::getForwardFB(
-	TextureManager& textureManager, glm::ivec2 resolution, bool clear
+	TextureManager& textureManager, glm::ivec2 resolution
 ) {
 	FrameBuffer fb;
-	fb.m_clearOnBind = clear;
+	fb.m_clearOnBind = true;
 	fb.m_resolution = resolution;
 	glCreateFramebuffers(1, &fb.m_framebuffer);
 
@@ -71,6 +71,32 @@ FrameBuffer FrameBuffer::getForwardFB(
 
 	fb.m_clearMask = GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT;
 
+	return fb;
+}
+FrameBuffer FrameBuffer::getIrradianceFB(
+	TextureManager& textureManager, glm::ivec2 resolution
+) {
+	FrameBuffer fb;
+	fb.m_clearOnBind = true;
+	fb.m_resolution = resolution;
+	glCreateFramebuffers(1, &fb.m_framebuffer);
+
+	TextureManager::TextureSpecification colorSpecs = {
+		.definition = {
+			.format = GL_RGB8,
+			.type = GL_TEXTURE_CUBE_MAP,
+			.width = resolution.x,
+			.height = resolution.y,
+			.depth = 6,
+		},
+
+	};
+
+	fb.setAttachment(
+		FrameBufferAttachment::COLOR0,
+		textureManager.createTexture(colorSpecs),
+		textureManager
+	);
 	return fb;
 }
 

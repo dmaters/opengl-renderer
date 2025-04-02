@@ -142,7 +142,10 @@ void Program::setUniform(std::string name, int value) {
 	uint32_t location = glGetUniformLocation(m_programID, name.c_str());
 	glProgramUniform1i(m_programID, location, value);
 }
-
+void Program::setUniform(std::string name, unsigned int value) {
+	uint32_t location = glGetUniformLocation(m_programID, name.c_str());
+	glProgramUniform1ui(m_programID, location, value);
+}
 void Program::setUniform(std::string name, Texture& value) {
 	uint32_t location = glGetUniformLocation(m_programID, name.c_str());
 	glProgramUniformHandleui64ARB(

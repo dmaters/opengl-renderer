@@ -213,16 +213,18 @@ std::unordered_map<uint32_t, MaterialHandle> loadMaterials(
 			) == AI_SUCCESS)
 			values.emissionValue = emissiveValue;
 
-		specs.type = aiTextureType_UNKNOWN;
+		specs.type = aiTextureType_GLTF_METALLIC_ROUGHNESS;
 		values.roughnessMetallic = loadTexture(specs);
 		float metallicValue;
 		if (materialInstance->Get(AI_MATKEY_METALLIC_FACTOR, metallicValue) ==
-		    AI_SUCCESS)
+		        AI_SUCCESS &&
+		    values.roughnessMetallic != TextureHandle::UNASSIGNED)
 			values.metallicValue = metallicValue;
 
 		float roughnessValue;
 		if (materialInstance->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessValue) ==
-		    AI_SUCCESS)
+		        AI_SUCCESS &&
+		    values.roughnessMetallic != TextureHandle::UNASSIGNED)
 			values.roughnessValue = roughnessValue;
 
 		Material material = Material::StandardPBRMaterial(values);

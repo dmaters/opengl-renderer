@@ -2,7 +2,7 @@
 
 out vec4 FragColor;
 
-uniform float exposure = 1.0;
+uniform float exposure = 2.0;
 uniform float gamma = 2.2;
 uniform sampler2D attachment;
 in vec2 TexCoord;

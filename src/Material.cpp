@@ -144,6 +144,7 @@ Material Material::StandardPBRMaterial(PBRMaterialValues values) {
 
 	material.setUniform("components", (int)components);
 	material.setUniform("projection_view", UBOHandle::PROJECTION_VIEW);
+	material.setUniform("irradiance_map", TextureHandle::IRRADIANCE);
 	return material;
 }
 

@@ -13,13 +13,16 @@ void ComputeShader::dispatch(glm::ivec3 groupCount) {
 }
 
 void ComputeShader::setUniform(
-	std::string name,
-	Texture& texture,
-	GLenum usage = GL_READ_WRITE,
-	uint32_t mipmap
+	std::string name, Texture& texture, GLenum usage, uint32_t mipmap
 ) {
 	GLuint64 imageHandle = glGetImageHandleARB(
-		texture.textureBindlessHandle, mipmap, GL_FALSE, 0, usage
+		texture.textureID,
+		0,
+		texture.type == GL_TEXTURE_CUBE_MAP,
+		0,
+		texture.format
 	);
 	glMakeImageHandleResidentARB(imageHandle, usage);
+	uint32_t location = glGetUniformLocation(m_programID, name.c_str());
+	glProgramUniformHandleui64ARB(m_programID, location, imageHandle);
 }

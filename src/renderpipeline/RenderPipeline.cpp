@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 
+#include "ComputeShader.h"
 #include "FrameBuffer.h"
 #include "Frustum.hpp"
 #include "Light.h"
@@ -21,19 +22,43 @@
 #include "ResourceManager.h"
 #include "Resources.h"
 #include "TextureManager.h"
-#include "glm/geometric.hpp"
 
 RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 ) :
 	m_resourceManager(resourceManager) {
-	m_shadowMapFB = FrameBuffer::getShadowMapFB(
-		resourceManager->getTextureManager(), glm::uvec2(512, 512), true
+	TextureManager& textureManager = resourceManager->getTextureManager();
+	m_shadowMapFB =
+		FrameBuffer::getShadowMapFB(textureManager, glm::uvec2(512, 512));
+
+	m_colorForwardFB =
+		FrameBuffer::getForwardFB(textureManager, glm::uvec2(1, 1));
+
+	textureManager.createTexture({
+		.definition = {
+					   .format = GL_RGBA8,
+					   .type = GL_TEXTURE_CUBE_MAP,
+					   .width = 32,
+					   .height = 32,
+					   }
+    }, TextureHandle::IRRADIANCE);
+
+	m_irradianceCompute =
+		std::make_unique<ComputeShader>("resources/shaders/irradiance.comp");
+	m_irradianceCompute->setUniform(
+		"irradiance_map",
+		textureManager.getTexture(TextureHandle::IRRADIANCE),
+		GL_WRITE_ONLY,
+		0
+
+	);
+	TextureHandle skyboxHandle =
+		textureManager.loadTexture("resources/textures/skybox/");
+	m_irradianceCompute->setUniform(
+		"environment_map",
+		m_resourceManager->getTextureManager().getTexture(skyboxHandle)
 	);
 
-	m_colorForwardFB = FrameBuffer::getForwardFB(
-		resourceManager->getTextureManager(), glm::uvec2(1, 1), true
-	);
-
+	m_irradianceCompute->setUniform("sample_count", 1024u);
 	ProgramHandle shadowProgram = resourceManager->registerProgram(
 		{ .vertex = Program::DefaultPrograms::SHADOWMAP::VERTEX,
 	      .fragment = Program::DefaultPrograms::SHADOWMAP::FRAGMENT }
@@ -79,13 +104,7 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	);
 
 	Material& skyboxMaterial = resourceManager->getMaterial(m_skyboxMaterial);
-
-	skyboxMaterial.setUniform(
-		"skybox",
-		m_resourceManager->getTextureManager().loadTexture(
-			"resources/textures/skybox/"
-		)
-	);
+	skyboxMaterial.setUniform("skybox", skyboxHandle);
 	skyboxMaterial.setUniform("projection_view", UBOHandle::PROJECTION_VIEW);
 
 	ProgramHandle compositionProgram = m_resourceManager->registerProgram(
@@ -108,6 +127,11 @@ TextureHandle RenderPipeline::render(RenderSpecifications& specs) {
 		m_shadowMapFB.bind();
 		renderShadowMaps(specs);
 		m_shadowmapsGenerated = true;
+	}
+
+	if (!m_irradianceGenerated) {
+		m_irradianceCompute->dispatch(glm::ivec3(32, 32, 6));
+		m_irradianceGenerated = true;
 	}
 
 	m_colorForwardFB.setResolution(

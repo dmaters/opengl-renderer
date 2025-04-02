@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 
+#include "ComputeShader.h"
 #include "FrameBuffer.h"
 #include "RenderPass.h"
 #include "ResourceManager.h"
@@ -20,7 +21,6 @@ private:
 	struct CubemapTrasforms;
 
 	FrameBuffer m_shadowMapFB;
-
 	FrameBuffer m_colorForwardFB;
 
 	MaterialHandle m_shadowMapMaterial;
@@ -32,9 +32,12 @@ private:
 	UBOHandle m_sceneLightUBO;
 	UBOHandle m_lightsUBO;
 
+	std::unique_ptr<ComputeShader> m_irradianceCompute;
+
 	GLuint m_quadVao = 0;
 
 	bool m_shadowmapsGenerated = false;
+	bool m_irradianceGenerated = false;
 
 	void renderShadowMap(Scene& scene);
 

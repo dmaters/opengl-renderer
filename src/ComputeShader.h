@@ -15,7 +15,4 @@ public:
 	void setUniform(
 		std::string name, Texture& texture, GLenum usage, uint32_t mipmap = 0
 	);
-	inline void setUniform(std::string name, Texture& texture) {
-		setUniform(name, texture, GL_READ_ONLY, 0);
-	}
 };
