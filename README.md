@@ -7,12 +7,10 @@ This project is superseded by my [vulkan renderer](https://github.com/dmaters/vu
 
 
 ## Features
-- Physically Based Rendering (PBR) with basic material support, trasparency (in development), and HDR
-- Bindless Rendering (in development)
+- Physically Based Rendering (PBR) with basic material support, trasparency (in development), diffuse ambient from skybox, and HDR
 - Cubemapped Skybox
 - Shadow mapping for directional and point lights
 - Frustum culling
-- Compute bloom post-processing (in development)
 
 
 ## Building the Project
@@ -53,5 +51,7 @@ This project is superseded by my [vulkan renderer](https://github.com/dmaters/vu
 ## Notable features
 
 - Skybox is rendered in screen-space
+- Directional lighing position and shadows are dynamic based on scene size.
 - Point light shadow-mapping, using cubemapped depth buffers managed with geometry shaders.
-- Modern OpenGL with DSA/AZDO 
+- Modern OpenGL with DSA/AZDO
+- Ambient diffuse lighting is computed with IBL, irradiance map is dinamically computed from the skybox with a compute shader.
