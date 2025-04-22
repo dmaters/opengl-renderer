@@ -53,6 +53,7 @@ Application::Application() {
 	}
 
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	glDebugMessageCallback(debugCallback, 0);
 	glDebugMessageControl(
@@ -101,7 +102,7 @@ void Application::run(std::filesystem::path scenePath) {
 		                              .color = glm::vec3(1, 1, 1),
 		                              .intensity = 500 };
 
-	scene.addLight(pointLightDesc);
+	// scene.addLight(pointLightDesc);
 
 	while (!glfwWindowShouldClose(m_window)) {
 		float currentTime = glfwGetTime();

@@ -10,8 +10,9 @@ layout(std140, binding = 0) uniform projection_view {
 
 void main() {
 	vec2 uv = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
-	gl_Position = vec4(uv * 2.0f + -1.0f, 0, 1.0f);
+	gl_Position = vec4(uv * 2.0f + -1.0f, 1.0, 1.0f);
 
-	TexCoords =
-		vec3(inverse(view) * inverse(projection) * vec4(gl_Position.xy, 1, 1));
+	TexCoords = vec3(
+		inverse(projection * mat4(mat3(view))) * vec4(gl_Position.xy, 1, 1)
+	);
 }

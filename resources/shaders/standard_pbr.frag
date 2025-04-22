@@ -181,7 +181,7 @@ void main() {
 	vec3 kD = (1.0 - F) * (1.0 - metallic);
 	vec3 ambient = kD * albedo * ambientIrradiance / PI;
 
-	brdf += ambient * 4;
+	brdf += ambient;
 
 	FragColor = vec4(brdf, getAlbedo(TexCoords).a);
 }

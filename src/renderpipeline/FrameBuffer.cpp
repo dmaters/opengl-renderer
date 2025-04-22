@@ -13,20 +13,20 @@ FrameBuffer FrameBuffer::getShadowMapFB(
 	fb.m_clearOnBind = true;
 	fb.m_resolution = resolution;
 	glCreateFramebuffers(1, &fb.m_framebuffer);
-	TextureManager::TextureSpecification colorSpecs = {
+	TextureManager::TextureSpecification depthSpecs = {
 		.definition = {
-			.format = GL_RGB10_A2,
+			.format = GL_DEPTH_COMPONENT24,
 			.width = resolution.x,
 			.height = resolution.y,
 		},
 
 	};
-
 	fb.setAttachment(
-		FrameBufferAttachment::COLOR0,
-		textureManager.createTexture(colorSpecs),
+		FrameBufferAttachment::DEPTH,
+		textureManager.createTexture(depthSpecs),
 		textureManager
 	);
+
 	fb.m_clearMask = GL_DEPTH_BUFFER_BIT;
 
 	return fb;
@@ -42,7 +42,7 @@ FrameBuffer FrameBuffer::getForwardFB(
 
 	TextureManager::TextureSpecification colorSpecs = {
 		.definition = {
-			.format = GL_RGB10_A2,
+			.format = GL_RGB16F,
 			.width = resolution.x,
 			.height = resolution.y,
 		},

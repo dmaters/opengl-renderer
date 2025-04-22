@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -67,7 +68,7 @@ void Program::loadShader(std::filesystem::path path, GLenum shaderType) {
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
 		glGetShaderInfoLog(shader, 512, NULL, log);
-		std::cout << log << std::endl;
+		std::cerr << log << std::endl;
 	}
 	glAttachShader(m_programID, shader);
 	// glDeleteShader(shader);
@@ -81,13 +82,9 @@ Program::Program(std::filesystem::path compute) {
 	GLint isLinked = 0;
 	glGetProgramiv(m_programID, GL_LINK_STATUS, &isLinked);
 	if (!isLinked) {
-		GLint maxLength = 0;
-		glGetProgramiv(m_programID, GL_INFO_LOG_LENGTH, &maxLength);
-
-		// The maxLength includes the NULL character
-		std::vector<char> infoLog(maxLength);
-		glGetProgramInfoLog(m_programID, maxLength, &maxLength, &infoLog[0]);
-
+		char log[512];
+		glGetProgramInfoLog(m_programID, 512, NULL, &log[0]);
+		std::cerr << log << std::endl;
 		throw "Compute shader link failed";
 	}
 	std::vector<GLuint> shaders(6);

@@ -33,9 +33,9 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	m_colorForwardFB =
 		FrameBuffer::getForwardFB(textureManager, glm::uvec2(1, 1));
 
-	textureManager.createTexture({
+	TextureHandle irradianceMapHandle = textureManager.createTexture({
 		.definition = {
-					   .format = GL_RGBA8,
+					   .format = GL_RGBA16F,
 					   .type = GL_TEXTURE_CUBE_MAP,
 					   .width = 32,
 					   .height = 32,
@@ -52,13 +52,18 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 
 	);
 	TextureHandle skyboxHandle =
-		textureManager.loadTexture("resources/textures/skybox/");
+		textureManager.loadTexture("resources/textures/skybox.hdr");
+
 	m_irradianceCompute->setUniform(
 		"environment_map",
 		m_resourceManager->getTextureManager().getTexture(skyboxHandle)
 	);
 
-	m_irradianceCompute->setUniform("sample_count", 1024u);
+	Texture& irradianceMap =
+		m_resourceManager->getTextureManager().getTexture(irradianceMapHandle);
+	float clearColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };  // RGBA clear color
+	glClearTexImage(irradianceMap.textureID, 0, GL_RGBA, GL_FLOAT, clearColor);
+
 	ProgramHandle shadowProgram = resourceManager->registerProgram(
 		{ .vertex = Program::DefaultPrograms::SHADOWMAP::VERTEX,
 	      .fragment = Program::DefaultPrograms::SHADOWMAP::FRAGMENT }

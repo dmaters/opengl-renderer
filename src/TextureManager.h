@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <map>
 #include <optional>
-#include <set>
 #include <vector>
 
 #include "Resources.h"

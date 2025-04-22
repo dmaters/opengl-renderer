@@ -122,6 +122,7 @@ TextureHandle TextureManager::createTexture(
 				specs.data->data.data()
 			);
 	}
+	if (texture.mipmap_levels > 1) glGenerateTextureMipmap(texture.textureID);
 
 	GLuint64 textureHandle = glGetTextureHandleARB(texture.textureID);
 	glMakeTextureHandleResidentARB(textureHandle);
@@ -293,8 +294,16 @@ std::vector<unsigned char> loadData(
 ) {
 	std::vector<unsigned char> data;
 
-	unsigned char* rawData =
-		stbi_load(path.string().data(), &width, &height, &channels, 0);
+	unsigned char* rawData = nullptr;
+	bool isHDR = path.extension() == ".hdr";
+	if (isHDR)
+		rawData = (unsigned char*)stbi_loadf(
+			path.string().data(), &width, &height, &channels, 0
+		);
+	else
+		rawData =
+			stbi_load(path.string().data(), &width, &height, &channels, 0);
+
 	if (rawData == nullptr && stbi_failure_reason()) {
 		std::cout << "Error loading " + path.string() + "|"
 				  << "Failed for error " << stbi_failure_reason() << std::endl;
@@ -302,7 +311,7 @@ std::vector<unsigned char> loadData(
 	}
 
 	data = std::vector<unsigned char>(
-		rawData, rawData + width * height * channels
+		rawData, rawData + width * height * channels * (isHDR ? 4 : 1)
 	);
 	return data;
 }
@@ -313,24 +322,28 @@ TextureHandle TextureManager::loadTexture(
 	assert(std::filesystem::exists(path));
 	std::vector<unsigned char> data;
 	int width, height, channels;
+	stbi_set_flip_vertically_on_load(1);
 	bool isCubemap = !std::filesystem::is_regular_file(path);
+	bool isHDR = path.has_extension() && path.extension() == ".hdr";
 
 	if (isCubemap) {
-		stbi_set_flip_vertically_on_load(0);
 		for (int i = 0; i < 6; i++) {
 			auto imageData =
 				loadData(path / CUBEMAP_FACES[i], width, height, channels);
 			data.insert(data.end(), imageData.begin(), imageData.end());
 		}
 	} else {
-		stbi_set_flip_vertically_on_load(1);
 		data = loadData(path, width, height, channels);
 	}
-	GLenum dataFormat, internalFormat;
+	GLenum dataFormat, internalFormat, encoding;
 	channelsToFormat(channels, dataFormat, internalFormat);
+	encoding = GL_UNSIGNED_BYTE;
 
 	Texture definition = {
+		.filtering = GL_LINEAR,
 		.format = internalFormat,
+		.mipmap_levels =
+			(GLint)std::floor(std::log2(std::max(width, height))) + 1,
 		.width = width,
 		.height = height,
 	};
@@ -339,12 +352,17 @@ TextureHandle TextureManager::loadTexture(
 		definition.type = GL_TEXTURE_CUBE_MAP;
 	}
 
+	if (isHDR) {
+		encoding = (GLenum)GL_FLOAT;
+		definition.format = GL_RGB16F;
+	}
+
 	TextureManager::TextureSpecification specs {
 		.definition = definition,
 		.data = TextureManager::TextureData { .format = dataFormat,
-                                             .encoding = GL_UNSIGNED_BYTE,
+                                             .encoding = encoding,
                                              .data = data }
 	};
 
-	return createTexture(specs);
+	return createTexture(specs, handle);
 }
