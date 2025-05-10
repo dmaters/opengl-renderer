@@ -32,7 +32,10 @@ public:
 	static FrameBuffer getShadowMapFB(
 		TextureManager& textureManager, glm::ivec2 resolution
 	);
-	static FrameBuffer getForwardFB(
+	static FrameBuffer getGBufferPassFB(
+		TextureManager& textureManager, glm::ivec2 resolution
+	);
+	static FrameBuffer getGeneralRenderPassFB(
 		TextureManager& textureManager, glm::ivec2 resolution
 	);
 
@@ -42,13 +45,7 @@ public:
 
 		return m_attachments.at(attachment);
 	};
-	void bind() const {
-		glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
-		glViewport(0, 0, m_resolution.x, m_resolution.y);
-
-		if (m_clearOnBind) glClear(m_clearMask);
-	}
-
+	void bind();
 	void setAttachment(
 		FrameBufferAttachment attachment,
 		TextureHandle handle,

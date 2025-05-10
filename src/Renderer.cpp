@@ -10,9 +10,9 @@
 #include "ResourceManager.h"
 #include "Resources.h"
 #include "Scene.h"
-#include "TextureManager.h"
 #include "glad/glad.h"
 #include "postprocessing/HDRBloom.h"
+
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
@@ -29,14 +29,13 @@ Renderer::Renderer(
 	glEnable(GL_BLEND);
 
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	glDepthFunc(GL_LEQUAL);
 	glDepthMask(GL_TRUE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void Renderer::render(Scene& scene) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	TextureManager& textureManager = m_resourceManager->getTextureManager();
 
 	Camera& camera = scene.getCamera();
 
@@ -54,11 +53,7 @@ void Renderer::render(Scene& scene) {
 		.scene = scene, .resolution = glm::ivec2(m_width, m_height)
 	};
 
-	TextureHandle output = m_renderPipeline->render(specs);
-
-	// glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//  drawQuad(textureManager.getTexture(output));
+	m_renderPipeline->render(specs);
 }
 
 void Renderer::setResolution(int width, int height) {

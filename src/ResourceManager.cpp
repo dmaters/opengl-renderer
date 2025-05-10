@@ -16,10 +16,9 @@
 
 ResourceManager::ResourceManager() : m_textureManager() {
 	registerProgram(
-		Program::Stages {
-			.vertex = Program::DefaultPrograms::STANDARD_FORWARD::VERTEX,
-			.fragment = Program::DefaultPrograms::STANDARD_FORWARD::FRAGMENT },
-		ProgramHandle::FORWARD
+		Program::Stages { .vertex = "resources/shaders/gbuffer.vert",
+	                      .fragment = "resources/shaders/gbuffer.frag" },
+		ProgramHandle::GBUFFER
 	);
 
 	registerMaterial(

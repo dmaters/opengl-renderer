@@ -13,7 +13,7 @@ struct MaterialHandle : public Handle<MaterialHandle> {
 	static const MaterialHandle DEFAULT;
 };
 struct ProgramHandle : public Handle<ProgramHandle> {
-	static const ProgramHandle FORWARD;
+	static const ProgramHandle GBUFFER;
 };
 struct UBOHandle : public Handle<UBOHandle> {
 	static const UBOHandle PROJECTION_VIEW;

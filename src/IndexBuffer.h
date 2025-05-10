@@ -9,7 +9,6 @@ private:
 	GLuint m_glID;
 	GLenum m_format;
 	uint32_t m_count;
-
 public:
 	IndexBuffer(std::span<unsigned char> data, GLenum format);
 	inline GLuint getID() const { return m_glID; }

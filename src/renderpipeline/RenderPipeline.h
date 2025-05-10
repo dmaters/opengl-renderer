@@ -21,13 +21,16 @@ private:
 	struct CubemapTrasforms;
 
 	FrameBuffer m_shadowMapFB;
-	FrameBuffer m_colorForwardFB;
+	FrameBuffer m_gbufferFB;
+	FrameBuffer m_finalFB;
 
 	MaterialHandle m_shadowMapMaterial;
 	MaterialHandle m_omniShadowMapMaterial;
 
 	MaterialHandle m_compositionMaterial;
 	MaterialHandle m_skyboxMaterial;
+
+	MaterialHandle m_lightingMaterial;
 
 	UBOHandle m_sceneLightUBO;
 	UBOHandle m_lightsUBO;
@@ -50,9 +53,9 @@ private:
 public:
 	RenderPipeline(std::shared_ptr<ResourceManager> resourceManager);
 
-	TextureHandle render(RenderSpecifications& specs);
+	void render(RenderSpecifications& specs);
 	void renderSubpass(RenderPassSpecs& renderPassSpecs);
-	void renderFullscreenPass(MaterialHandle handle);
+	void renderFullscreenPass(MaterialHandle handle, bool testDepth = false);
 };
 
 struct RenderPipeline::RenderSpecifications {

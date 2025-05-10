@@ -49,39 +49,3 @@ public:
 
 	void setUBO(std::string name, GLuint UBO, GLuint binding);
 };
-
-class Program::DefaultPrograms {
-public:
-	class STANDARD_FORWARD {
-	public:
-		inline static const std::filesystem::path VERTEX =
-			"resources/shaders/standard_pbr.vert";
-
-		inline static const std::filesystem::path FRAGMENT =
-			"resources/shaders/standard_pbr.frag";
-	};
-	class SHADOWMAP {
-	public:
-		inline static const std::filesystem::path VERTEX =
-			"resources/shaders/shadow.vert";
-
-		inline static const std::filesystem::path FRAGMENT =
-			"resources/shaders/shadow.frag";
-	};
-	class SKYBOX {
-	public:
-		inline static const std::filesystem::path VERTEX =
-			"resources/shaders/skybox.vert";
-
-		inline static const std::filesystem::path FRAGMENT =
-			"resources/shaders/skybox.frag";
-	};
-	class QUAD {
-	public:
-		inline static const std::filesystem::path VERTEX =
-			"resources/shaders/quad.vert";
-
-		inline static const std::filesystem::path FRAGMENT =
-			"resources/shaders/quad.frag";
-	};
-};

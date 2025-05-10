@@ -5,19 +5,12 @@
 out vec4 FragColor;
 
 in vec3 Normal;
-in vec2 TexCoords;
-in vec4 FragPos;
+in vec2 TexCoord;
 
-layout(bindless_sampler) uniform sampler2D albedo;
-uniform vec4 albedo_color;
-layout(bindless_sampler) uniform sampler2D normal;
-layout(bindless_sampler) uniform sampler2D roughness_metallic;
-uniform float roughness_value;
-uniform float metallic_value;
-layout(bindless_sampler) uniform sampler2D emissive;
-uniform float emissive_value;
-
-uniform int components;
+layout(bindless_sampler) uniform sampler2D _albedo;
+layout(bindless_sampler) uniform sampler2D _normal;
+layout(bindless_sampler) uniform sampler2D _world_position;
+layout(bindless_sampler) uniform sampler2D _roughness_metallic;
 
 layout(bindless_sampler) uniform samplerCube irradiance_map;
 
@@ -53,8 +46,10 @@ float nonLinearToLinearDepth(float nonLinearDepth, mat4 projectionMatrix) {
 	return (2.0 * near * far) / (far + near - nonLinearDepth * (far - near));
 }
 float shadowPercentageOmni(int light) {
+	vec4 fragPos = texture(_world_position, TexCoord);
+
 	mat4 lightTransform = lights[light].light_tranformation;
-	vec4 lightSpacePos = lightTransform * FragPos;
+	vec4 lightSpacePos = lightTransform * fragPos;
 
 	float depth =
 		texture(
@@ -69,8 +64,10 @@ float shadowPercentageOmni(int light) {
 }
 
 float shadowPercentage(int light) {
+	vec4 fragPos = texture(_world_position, TexCoord);
+
 	vec4 fragPosLightSpace = lights[light].light_projection *
-	                         lights[light].light_tranformation * FragPos;
+	                         lights[light].light_tranformation * fragPos;
 
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 	projCoords = projCoords * 0.5 + 0.5;
@@ -101,33 +98,17 @@ float geometrySmith(float NdotV, float NdotL, float a) {
 	float GGXL = NdotV * sqrt((NdotL - NdotL * a2) * NdotL + a2);
 	return 0.5 / (GGXV + GGXL);
 }
-vec4 getAlbedo(vec2 uv) {
-	if ((components & 1 << 0) != 0) return albedo_color;
-	return texture(albedo, uv);
-}
-float getMetallic(vec2 uv) {
-	if ((components & 1 << 1) != 0) return metallic_value;
-	return texture(roughness_metallic, uv).b;
-}
-float getRoughness(vec2 uv) {
-	if ((components & 1 << 2) != 0) return roughness_value;
-	return texture(roughness_metallic, uv).g;
-}
-float getEmissive(vec2 uv) {
-	if ((components & 1 << 3) != 0) return emissive_value;
-	return texture(emissive, uv).r;
-}
 
 vec3 microfacetBRDF(vec2 uv, vec3 viewDir, vec3 lightDir) {
 	vec3 halfview = normalize(viewDir + lightDir);
-	vec3 _norm = Normal;
-	float roughness = getRoughness(uv);
-	float metallic = getMetallic(uv);
-	vec3 albedo = getAlbedo(uv).rgb;
+	float roughness = texture(_roughness_metallic, uv).r;
+	float metallic = texture(_roughness_metallic, uv).g;
+	vec3 albedo = texture(_albedo, uv).rgb;
+	vec3 norm = texture(_normal, uv).rgb;
 
-	float NdotV = max(dot(_norm, viewDir), 0.0);
-	float NdotL = max(dot(_norm, lightDir), 0.0);
-	float NdotH = max(dot(_norm, halfview), 0.0);
+	float NdotV = max(dot(norm, viewDir), 0.0);
+	float NdotL = max(dot(norm, lightDir), 0.0);
+	float NdotH = max(dot(norm, halfview), 0.0);
 	float HdotV = max(dot(halfview, viewDir), 0.0);
 
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
@@ -149,7 +130,9 @@ void main() {
 	mat3 rotationMat = mat3(view);
 	vec3 translation = vec3(view[3]);
 	vec3 cameraPos = -transpose(rotationMat) * translation;
-	vec3 view_dir = normalize(cameraPos - FragPos.xyz);
+	vec4 fragPos = texture(_world_position, TexCoord);
+
+	vec3 view_dir = normalize(cameraPos - fragPos.xyz);
 
 	vec3 brdf = vec3(0);
 
@@ -159,29 +142,31 @@ void main() {
 		vec3 light_dir;
 		if (is_omni_shadow(i)) {
 			shadow = 1 - shadowPercentageOmni(i);
-			light_dir = light_mat[3].xyz - FragPos.xyz;
+			light_dir = light_mat[3].xyz - fragPos.xyz;
 
 		} else {
 			shadow = 1 - shadowPercentage(i);
 			light_dir = light_mat[2].xyz;
 		}
-		vec3 irradiance = microfacetBRDF(TexCoords, view_dir, light_dir);
+		vec3 irradiance = microfacetBRDF(TexCoord, view_dir, light_dir);
 		brdf += shadow * irradiance * lights[i].color.xyz * lights[i].color.w /
 		        (pow(length(light_dir), 2) * 4 * PI);
 	}
 
-	vec3 albedo = getAlbedo(TexCoords).rgb;
-	float metallic = getMetallic(TexCoords);
-	float roughness = getRoughness(TexCoords);
-	vec3 ambientIrradiance = texture(irradiance_map, Normal).rgb;
+	float roughness = texture(_roughness_metallic, TexCoord).r;
+	float metallic = texture(_roughness_metallic, TexCoord).g;
+	vec3 albedo = texture(_albedo, TexCoord).rgb;
+	vec3 norm = texture(_normal, TexCoord).rgb;
+
+	vec3 ambientIrradiance = texture(irradiance_map, norm).rgb;
 
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
-	vec3 F = fresnelSchlick(max(dot(Normal, view_dir), 0.0), F0);
+	vec3 F = fresnelSchlick(max(dot(norm, view_dir), 0.0), F0);
 
 	vec3 kD = (1.0 - F) * (1.0 - metallic);
 	vec3 ambient = kD * albedo * ambientIrradiance / PI;
 
 	brdf += ambient;
 
-	FragColor = vec4(brdf, getAlbedo(TexCoords).a);
+	FragColor = vec4(brdf, 1);
 }

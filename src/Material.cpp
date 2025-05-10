@@ -55,8 +55,9 @@ void Material::bind(ResourceManager& resourceManager, Material& oldMaterial) {
 
 	for (std::string& name : differences) {
 		std::visit(
-			[name, resourceManager, textureManager, &program](auto& uniformValue
-		    ) {
+			[&name, &resourceManager, &textureManager, &program](
+				auto& uniformValue
+			) {
 				using T = std::decay_t<decltype(uniformValue)>;
 
 				if constexpr (std::is_same_v<T, TextureHandle>) {
@@ -91,7 +92,7 @@ PBRComponents operator|(PBRComponents a, PBRComponents b) {
 Material Material::StandardPBRMaterial(PBRMaterialValues values) {
 	Material material;
 	PBRComponents components = PBRComponents::NONE;
-	material.m_program = ProgramHandle::FORWARD;
+	material.m_program = ProgramHandle::GBUFFER;
 	// Albedo
 
 	if (values.albedo != TextureHandle::UNASSIGNED)
@@ -144,7 +145,7 @@ Material Material::StandardPBRMaterial(PBRMaterialValues values) {
 
 	material.setUniform("components", (int)components);
 	material.setUniform("projection_view", UBOHandle::PROJECTION_VIEW);
-	material.setUniform("irradiance_map", TextureHandle::IRRADIANCE);
+	//	material.setUniform("irradiance_map", TextureHandle::IRRADIANCE);
 	return material;
 }
 

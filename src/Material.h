@@ -2,10 +2,12 @@
 
 #include <glad/glad.h>
 
+#include <cassert>
 #include <cstdint>
 #include <map>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <variant>
 
 #include "Resources.h"
@@ -38,7 +40,6 @@ public:
 
 	static Material CustomMaterial(ProgramHandle program);
 
-private:
 	using UniformDataValue = std::variant<
 		float,
 		int,
@@ -50,6 +51,7 @@ private:
 		TextureHandle,
 		UBOHandle>;
 
+private:
 	// Using type traits to distinguish between the types
 	template <typename T>
 	struct is_ubo : std::false_type {};
@@ -63,7 +65,7 @@ private:
 	template <>
 	struct is_texture<TextureHandle> : std::true_type {};
 
-	std::map<std::string, UniformDataValue> m_uniformValues;
+	std::unordered_map<std::string, UniformDataValue> m_uniformValues;
 	ProgramHandle m_program;
 	bool m_trasparency = false;
 
@@ -78,7 +80,8 @@ public:
 
 	template <UniformDataValueType T>
 	T getUniform(std::string name) {
-		return m_uniformValues[name];
+		assert(m_uniformValues.contains(name));
+		return m_uniformValues.at(name);
 	}
 
 	inline ProgramHandle getProgram() const { return m_program; }

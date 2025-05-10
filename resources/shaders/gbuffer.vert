@@ -6,7 +6,7 @@ layout(location = 2) in vec2 i_TextCoords;
 
 out vec3 Normal;
 out vec2 TexCoords;
-out vec4 FragPos;
+out vec3 WorldPos;
 
 layout(std140, binding = 0) uniform projection_view {
 	mat4 view;
@@ -19,5 +19,5 @@ void main() {
 
 	Normal = i_Normal;
 	TexCoords = i_TextCoords;
-	FragPos = model * vec4(i_Position, 1.0);
+	WorldPos = (model * vec4(i_Position, 1)).xyz;
 }

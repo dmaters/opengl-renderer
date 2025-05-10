@@ -6,6 +6,29 @@
 #include "TextureManager.h"
 #include "glad/glad.h"
 
+constexpr GLenum attachmentTypeToEnum(FrameBufferAttachment attachment) {
+	switch (attachment) {
+		case FrameBufferAttachment::COLOR0:
+			return GL_COLOR_ATTACHMENT0;
+			break;
+		case FrameBufferAttachment::COLOR1:
+			return GL_COLOR_ATTACHMENT1;
+			break;
+		case FrameBufferAttachment::COLOR2:
+			return GL_COLOR_ATTACHMENT2;
+			break;
+		case FrameBufferAttachment::COLOR3:
+			return GL_COLOR_ATTACHMENT3;
+			break;
+		case FrameBufferAttachment::DEPTH:
+			return GL_DEPTH_ATTACHMENT;
+			break;
+		case FrameBufferAttachment::STENCIL:
+			return GL_STENCIL_ATTACHMENT;
+			break;
+	}
+}
+
 FrameBuffer FrameBuffer::getShadowMapFB(
 	TextureManager& textureManager, glm::ivec2 resolution
 ) {
@@ -32,26 +55,66 @@ FrameBuffer FrameBuffer::getShadowMapFB(
 	return fb;
 }
 
-FrameBuffer FrameBuffer::getForwardFB(
+FrameBuffer FrameBuffer::getGBufferPassFB(
 	TextureManager& textureManager, glm::ivec2 resolution
 ) {
 	FrameBuffer fb;
 	fb.m_clearOnBind = true;
 	fb.m_resolution = resolution;
+	fb.m_clearMask = GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT;
+
 	glCreateFramebuffers(1, &fb.m_framebuffer);
 
-	TextureManager::TextureSpecification colorSpecs = {
+	TextureManager::TextureSpecification albedo = {
 		.definition = {
 			.format = GL_RGB16F,
 			.width = resolution.x,
 			.height = resolution.y,
 		},
-
 	};
 
 	fb.setAttachment(
 		FrameBufferAttachment::COLOR0,
-		textureManager.createTexture(colorSpecs),
+		textureManager.createTexture(albedo),
+		textureManager
+	);
+	TextureManager::TextureSpecification worldSpace = {
+		.definition = {
+			.format = GL_RGB16F,
+			.width = resolution.x,
+			.height = resolution.y,
+		},
+	};
+
+	fb.setAttachment(
+		FrameBufferAttachment::COLOR1,
+		textureManager.createTexture(worldSpace),
+		textureManager
+	);
+	TextureManager::TextureSpecification normal = {
+		.definition = {
+			.format = GL_RGB16F,
+			.width = resolution.x,
+			.height = resolution.y,
+		},
+	};
+
+	fb.setAttachment(
+		FrameBufferAttachment::COLOR2,
+		textureManager.createTexture(normal),
+		textureManager
+	);
+	TextureManager::TextureSpecification roughnessMetallic = {
+		.definition = {
+			.format = GL_RG16F,
+			.width = resolution.x,
+			.height = resolution.y,
+		},
+	};
+
+	fb.setAttachment(
+		FrameBufferAttachment::COLOR3,
+		textureManager.createTexture(roughnessMetallic),
 		textureManager
 	);
 
@@ -69,7 +132,31 @@ FrameBuffer FrameBuffer::getForwardFB(
 		textureManager
 	);
 
-	fb.m_clearMask = GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT;
+	return fb;
+}
+
+FrameBuffer FrameBuffer::getGeneralRenderPassFB(
+	TextureManager& textureManager, glm::ivec2 resolution
+) {
+	FrameBuffer fb;
+	fb.m_clearOnBind = true;
+	fb.m_resolution = resolution;
+	fb.m_clearMask = GL_COLOR_BUFFER_BIT;
+	glCreateFramebuffers(1, &fb.m_framebuffer);
+
+	TextureManager::TextureSpecification color = {
+		.definition = {
+			.format = GL_RGBA16F,
+			.width = resolution.x,
+			.height = resolution.y,
+		},
+	};
+
+	fb.setAttachment(
+		FrameBufferAttachment::COLOR0,
+		textureManager.createTexture(color),
+		textureManager
+	);
 
 	return fb;
 }
@@ -80,34 +167,20 @@ void FrameBuffer::setAttachment(
 ) {
 	m_attachments[attachment] = handle;
 
-	GLenum attachmentType;
-
-	switch (attachment) {
-		case FrameBufferAttachment::COLOR0:
-			attachmentType = GL_COLOR_ATTACHMENT0;
-			break;
-		case FrameBufferAttachment::COLOR1:
-			attachmentType = GL_COLOR_ATTACHMENT1;
-			break;
-		case FrameBufferAttachment::COLOR2:
-			attachmentType = GL_COLOR_ATTACHMENT2;
-			break;
-		case FrameBufferAttachment::COLOR3:
-			attachmentType = GL_COLOR_ATTACHMENT3;
-			break;
-		case FrameBufferAttachment::DEPTH:
-			attachmentType = GL_DEPTH_ATTACHMENT;
-			break;
-		case FrameBufferAttachment::STENCIL:
-			attachmentType = GL_STENCIL_ATTACHMENT;
-			break;
-	}
-
 	glNamedFramebufferTexture(
 		m_framebuffer,
-		attachmentType,
+		attachmentTypeToEnum(attachment),
 		textureManager.getTexture(handle).textureID,
 		0
+	);
+
+	std::vector<GLenum> drawBuffers;
+	for (auto& [attachment, texture] : m_attachments) {
+		if (attachment != FrameBufferAttachment::DEPTH)
+			drawBuffers.push_back(attachmentTypeToEnum(attachment));
+	}
+	glNamedFramebufferDrawBuffers(
+		m_framebuffer, drawBuffers.size(), drawBuffers.data()
 	);
 }
 
@@ -117,13 +190,24 @@ void FrameBuffer::setResolution(
 	if (resolution == m_resolution) return;
 	for (auto& [type, handle] : m_attachments) {
 		Texture& texture = textureManager.getTexture(handle);
-		texture.width = resolution.x;
-		texture.height = resolution.y;
+		if (resolution.x != texture.width && resolution.y != texture.height) {
+			texture.width = resolution.x;
+			texture.height = resolution.y;
 
-		TextureManager::TextureSpecification specs { .definition = texture };
-		textureManager.createTexture(specs, handle);
+			TextureManager::TextureSpecification specs {
+				.definition = texture,
+			};
+			textureManager.createTexture(specs, handle);
+		}
 
 		setAttachment(type, handle, textureManager);
-		m_resolution = resolution;
 	}
+	m_resolution = resolution;
+}
+
+void FrameBuffer::bind() {
+	glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
+	glViewport(0, 0, m_resolution.x, m_resolution.y);
+
+	if (m_clearOnBind) glClear(m_clearMask);
 }

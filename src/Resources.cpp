@@ -2,7 +2,7 @@
 
 const UBOHandle UBOHandle::PROJECTION_VIEW = { 1 };
 
-const ProgramHandle ProgramHandle::FORWARD = { 1 };
+const ProgramHandle ProgramHandle::GBUFFER = { 1 };
 
 const MaterialHandle MaterialHandle::DEFAULT = { 1 };
 

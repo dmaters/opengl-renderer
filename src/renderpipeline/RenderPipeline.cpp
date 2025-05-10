@@ -30,8 +30,16 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	m_shadowMapFB =
 		FrameBuffer::getShadowMapFB(textureManager, glm::uvec2(512, 512));
 
-	m_colorForwardFB =
-		FrameBuffer::getForwardFB(textureManager, glm::uvec2(1, 1));
+	m_gbufferFB =
+		FrameBuffer::getGBufferPassFB(textureManager, glm::uvec2(1, 1));
+	m_finalFB =
+		FrameBuffer::getGeneralRenderPassFB(textureManager, glm::uvec2(1, 1));
+
+	m_finalFB.setAttachment(
+		FrameBufferAttachment::DEPTH,
+		m_gbufferFB.getAttachment(FrameBufferAttachment::DEPTH),
+		m_resourceManager->getTextureManager()
+	);
 
 	TextureHandle irradianceMapHandle = textureManager.createTexture({
 		.definition = {
@@ -65,8 +73,8 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	glClearTexImage(irradianceMap.textureID, 0, GL_RGBA, GL_FLOAT, clearColor);
 
 	ProgramHandle shadowProgram = resourceManager->registerProgram(
-		{ .vertex = Program::DefaultPrograms::SHADOWMAP::VERTEX,
-	      .fragment = Program::DefaultPrograms::SHADOWMAP::FRAGMENT }
+		{ .vertex = "resources/shaders/shadow.vert",
+	      .fragment = "resources/shaders/shadow.frag" }
 	);
 
 	m_shadowMapMaterial = m_resourceManager->registerMaterial(
@@ -76,7 +84,7 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	ProgramHandle omniShadowProgram = resourceManager->registerProgram(
 		{ .vertex = "resources/shaders/shadow_omni.vert",
 	      .geometry = "resources/shaders/shadow_omni.geom",
-	      .fragment = Program::DefaultPrograms::SHADOWMAP::FRAGMENT
+	      .fragment = "resources/shaders/shadow.frag"
 
 	    }
 	);
@@ -100,8 +108,8 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 		.setUniform("LightsData", m_lightsUBO);
 
 	ProgramHandle skyboxProgram = m_resourceManager->registerProgram(
-		{ .vertex = Program::DefaultPrograms::SKYBOX::VERTEX,
-	      .fragment = Program::DefaultPrograms::SKYBOX::FRAGMENT }
+		{ .vertex = "resources/shaders/skybox.vert",
+	      .fragment = "resources/shaders/skybox.frag" }
 	);
 
 	m_skyboxMaterial = m_resourceManager->registerMaterial(
@@ -122,12 +130,36 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	Material& compMaterial =
 		m_resourceManager->getMaterial(m_compositionMaterial);
 	compMaterial.setUniform(
-		"attachment",
-		m_colorForwardFB.getAttachment(FrameBufferAttachment::COLOR0)
+		"attachment", m_finalFB.getAttachment(FrameBufferAttachment::COLOR0)
 	);
+
+	ProgramHandle lightingProgram = m_resourceManager->registerProgram(
+		{ .vertex = "resources/shaders/quad.vert",
+	      .fragment = "resources/shaders/lighting_pbr.frag" }
+	);
+	m_lightingMaterial = m_resourceManager->registerMaterial(
+		Material::CustomMaterial(lightingProgram)
+	);
+	Material& lightingMaterial =
+		m_resourceManager->getMaterial(m_lightingMaterial);
+	lightingMaterial.setUniform(
+		"_albedo", m_gbufferFB.getAttachment(FrameBufferAttachment::COLOR0)
+	);
+	lightingMaterial.setUniform(
+		"_normal", m_gbufferFB.getAttachment(FrameBufferAttachment::COLOR1)
+	);
+	lightingMaterial.setUniform(
+		"_world_position",
+		m_gbufferFB.getAttachment(FrameBufferAttachment::COLOR2)
+	);
+	lightingMaterial.setUniform(
+		"_roughness_metallic",
+		m_gbufferFB.getAttachment(FrameBufferAttachment::COLOR3)
+	);
+	lightingMaterial.setUniform("irradiance_map", TextureHandle::IRRADIANCE);
 }
 
-TextureHandle RenderPipeline::render(RenderSpecifications& specs) {
+void RenderPipeline::render(RenderSpecifications& specs) {
 	if (!m_shadowmapsGenerated) {
 		m_shadowMapFB.bind();
 		renderShadowMaps(specs);
@@ -139,26 +171,24 @@ TextureHandle RenderPipeline::render(RenderSpecifications& specs) {
 		m_irradianceGenerated = true;
 	}
 
-	m_colorForwardFB.setResolution(
+	m_gbufferFB.setResolution(
 		specs.resolution, m_resourceManager->getTextureManager()
 	);
-	m_colorForwardFB.bind();
-
-	renderFullscreenPass(m_skyboxMaterial);
+	m_gbufferFB.bind();
 
 	Frustum frustum = specs.scene.m_camera.getFrustum(
 		glm::vec2(0.1, 10000), (float)specs.resolution.x / specs.resolution.y
 	);
+
 	ResourceManager& resourceManager = *m_resourceManager;
 	std::vector<std::reference_wrapper<Primitive>> opaquePrimitives =
 		specs.scene.getPrimitives([frustum,
 	                               resourceManager](Primitive& primitive) {
 			const Material& material =
 				resourceManager.getMaterial(primitive.getMaterialIndex());
-			return !material.getTrasparencyFlag() &&
-		           frustum.isSphereInFrustum(
-					   primitive.getPosition(), primitive.getSize()
-				   );
+			return frustum.isSphereInFrustum(
+				primitive.getPosition(), primitive.getSize()
+			);
 		});
 
 	RenderPassSpecs simpleRenderPass {
@@ -167,29 +197,37 @@ TextureHandle RenderPipeline::render(RenderSpecifications& specs) {
 	};
 
 	renderSubpass(simpleRenderPass);
+	m_finalFB.setResolution(
+		specs.resolution, m_resourceManager->getTextureManager()
+	);
+	m_finalFB.bind();
 
+	renderFullscreenPass(m_lightingMaterial);
+	renderFullscreenPass(m_skyboxMaterial, true);
+
+	/*
 	std::vector<std::reference_wrapper<Primitive>> trasparentPrimitives =
-		specs.scene.getPrimitives([frustum,
-	                               resourceManager](Primitive& primitive) {
-			const Material& material =
-				resourceManager.getMaterial(primitive.getMaterialIndex());
-			return material.getTrasparencyFlag() &&
-		           frustum.isSphereInFrustum(
-					   primitive.getPosition(), primitive.getSize()
-				   );
-		});
+	specs.scene.getPrimitives([frustum,
+	resourceManager](Primitive& primitive) {
+	    const Material& material =
+	    resourceManager.getMaterial(primitive.getMaterialIndex());
+	    return material.getTrasparencyFlag() &&
+	    frustum.isSphereInFrustum(
+	        primitive.getPosition(), primitive.getSize()
+	    );
+	});
 
 	RenderPassSpecs trasparentPass {
-		.primitives = trasparentPrimitives,
-		.scene = specs.scene,
+	    .primitives = trasparentPrimitives,
+	    .scene = specs.scene,
 	};
 
 	renderSubpass(trasparentPass);
+	*/
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	renderFullscreenPass(m_compositionMaterial);
-	return m_colorForwardFB.getAttachment(FrameBufferAttachment::COLOR0);
 }
 
 void RenderPipeline::renderSubpass(RenderPassSpecs& renderPassSpecs) {
@@ -204,9 +242,8 @@ void RenderPipeline::renderSubpass(RenderPassSpecs& renderPassSpecs) {
 			renderPassSpecs.primitives[0].get().getMaterialIndex();
 
 	Material& material = m_resourceManager->getMaterial(currentMaterialHandle);
-	Program& program = m_resourceManager->getProgram(material.getProgram());
-	material.bind(*m_resourceManager);
 
+	material.bind(*m_resourceManager);
 	for (Primitive& primitive : renderPassSpecs.primitives) {
 		if (renderPassSpecs.overrideMaterial == MaterialHandle::UNASSIGNED) {
 			MaterialHandle primitiveMaterialHandle =
@@ -216,14 +253,15 @@ void RenderPipeline::renderSubpass(RenderPassSpecs& renderPassSpecs) {
 				material =
 					m_resourceManager->getMaterial(primitive.getMaterialIndex()
 				    );
-				program = m_resourceManager->getProgram(material.getProgram());
 				material.bind(*m_resourceManager);
+				currentMaterialHandle = primitiveMaterialHandle;
 			}
 		}
 
 		auto vertexArray = primitive.getVertexArray();
 		vertexArray.bind();
 
+		Program& program = m_resourceManager->getProgram(material.getProgram());
 		program.setUniform("model", primitive.getTransformationMatrix());
 
 		glDrawElements(
@@ -313,16 +351,21 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 	}
 }
 
-void RenderPipeline::renderFullscreenPass(MaterialHandle handle) {
+void RenderPipeline::renderFullscreenPass(
+	MaterialHandle handle, bool depthTest
+) {
 	if (m_quadVao == 0) glGenVertexArrays(1, &m_quadVao);
 
 	Material& material = m_resourceManager->getMaterial(handle);
 	material.bind(*m_resourceManager);
-
-	glDepthMask(GL_FALSE);
-	glDisable(GL_DEPTH_TEST);
+	if (!depthTest) {
+		glDepthMask(GL_FALSE);
+		glDisable(GL_DEPTH_TEST);
+	}
 	glBindVertexArray(m_quadVao);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
-	glEnable(GL_DEPTH_TEST);
-	glDepthMask(GL_TRUE);
+	if (!depthTest) {
+		glEnable(GL_DEPTH_TEST);
+		glDepthMask(GL_TRUE);
+	}
 }
