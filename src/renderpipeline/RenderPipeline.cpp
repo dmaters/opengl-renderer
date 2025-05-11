@@ -77,9 +77,8 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	      .fragment = "resources/shaders/shadow.frag" }
 	);
 
-	m_shadowMapMaterial = m_resourceManager->registerMaterial(
-		Material::CustomMaterial(shadowProgram)
-	);
+	m_shadowMapMaterial =
+		m_resourceManager->registerMaterial(Material(shadowProgram));
 
 	ProgramHandle omniShadowProgram = resourceManager->registerProgram(
 		{ .vertex = "resources/shaders/shadow_omni.vert",
@@ -88,9 +87,8 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 
 	    }
 	);
-	m_omniShadowMapMaterial = m_resourceManager->registerMaterial(
-		Material::CustomMaterial(omniShadowProgram)
-	);
+	m_omniShadowMapMaterial =
+		m_resourceManager->registerMaterial(Material(omniShadowProgram));
 
 	auto cubemap_tranform_ubo =
 		resourceManager->registerUBO(CubemapTrasforms::get(), 2);
@@ -112,9 +110,8 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	      .fragment = "resources/shaders/skybox.frag" }
 	);
 
-	m_skyboxMaterial = m_resourceManager->registerMaterial(
-		Material::CustomMaterial(skyboxProgram)
-	);
+	m_skyboxMaterial =
+		m_resourceManager->registerMaterial(Material(skyboxProgram));
 
 	Material& skyboxMaterial = resourceManager->getMaterial(m_skyboxMaterial);
 	skyboxMaterial.setUniform("skybox", skyboxHandle);
@@ -124,22 +121,20 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 		{ .vertex = "resources/shaders/quad.vert",
 	      .fragment = "resources/shaders/comp.frag" }
 	);
-	m_compositionMaterial = m_resourceManager->registerMaterial(
-		Material::CustomMaterial(compositionProgram)
-	);
+	m_compositionMaterial =
+		m_resourceManager->registerMaterial(Material(compositionProgram));
 	Material& compMaterial =
 		m_resourceManager->getMaterial(m_compositionMaterial);
 	compMaterial.setUniform(
 		"attachment", m_finalFB.getAttachment(FrameBufferAttachment::COLOR0)
 	);
 
-	ProgramHandle lightingProgram = m_resourceManager->registerProgram(
-		{ .vertex = "resources/shaders/quad.vert",
-	      .fragment = "resources/shaders/lighting_pbr.frag" }
-	);
-	m_lightingMaterial = m_resourceManager->registerMaterial(
-		Material::CustomMaterial(lightingProgram)
-	);
+	ProgramHandle lightingProgram = m_resourceManager->registerProgram({
+		.vertex = "resources/shaders/quad.vert",
+		.fragment = "resources/shaders/lighting_pbr.frag",
+	});
+	m_lightingMaterial =
+		m_resourceManager->registerMaterial(Material(lightingProgram));
 	Material& lightingMaterial =
 		m_resourceManager->getMaterial(m_lightingMaterial);
 	lightingMaterial.setUniform(
@@ -183,7 +178,7 @@ void RenderPipeline::render(RenderSpecifications& specs) {
 	ResourceManager& resourceManager = *m_resourceManager;
 	std::vector<std::reference_wrapper<Primitive>> opaquePrimitives =
 		specs.scene.getPrimitives([frustum,
-	                               resourceManager](Primitive& primitive) {
+	                               &resourceManager](Primitive& primitive) {
 			const Material& material =
 				resourceManager.getMaterial(primitive.getMaterialIndex());
 			return frustum.isSphereInFrustum(
@@ -234,35 +229,35 @@ void RenderPipeline::renderSubpass(RenderPassSpecs& renderPassSpecs) {
 	if (renderPassSpecs.primitives.size() == 0) return;
 
 	MaterialHandle currentMaterialHandle = MaterialHandle::UNASSIGNED;
+	Program* program = nullptr;
 
-	if (renderPassSpecs.overrideMaterial != MaterialHandle::UNASSIGNED)
+	if (renderPassSpecs.overrideMaterial != MaterialHandle::UNASSIGNED) {
 		currentMaterialHandle = renderPassSpecs.overrideMaterial;
-	else
-		currentMaterialHandle =
-			renderPassSpecs.primitives[0].get().getMaterialIndex();
+		program = &m_resourceManager->getProgram(
+			m_resourceManager->getMaterial(currentMaterialHandle).getProgram()
+		);
+	}
 
-	Material& material = m_resourceManager->getMaterial(currentMaterialHandle);
-
-	material.bind(*m_resourceManager);
 	for (Primitive& primitive : renderPassSpecs.primitives) {
 		if (renderPassSpecs.overrideMaterial == MaterialHandle::UNASSIGNED) {
 			MaterialHandle primitiveMaterialHandle =
 				primitive.getMaterialIndex();
 
 			if (primitiveMaterialHandle != currentMaterialHandle) {
-				material =
-					m_resourceManager->getMaterial(primitive.getMaterialIndex()
-				    );
-				material.bind(*m_resourceManager);
 				currentMaterialHandle = primitiveMaterialHandle;
+
+				Material& material =
+					m_resourceManager->getMaterial(currentMaterialHandle);
+
+				material.bind(*m_resourceManager);
+				program = &m_resourceManager->getProgram(material.getProgram());
 			}
 		}
 
 		auto vertexArray = primitive.getVertexArray();
 		vertexArray.bind();
 
-		Program& program = m_resourceManager->getProgram(material.getProgram());
-		program.setUniform("model", primitive.getTransformationMatrix());
+		program->setUniform("model", primitive.getTransformationMatrix());
 
 		glDrawElements(
 			GL_TRIANGLES,

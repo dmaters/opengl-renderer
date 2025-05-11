@@ -227,13 +227,13 @@ std::unordered_map<uint32_t, MaterialHandle> loadMaterials(
 		    values.roughnessMetallic != TextureHandle::UNASSIGNED)
 			values.roughnessValue = roughnessValue;
 
-		Material material = Material::StandardPBRMaterial(values);
+		MaterialHandle handle = resourceManager.registerMaterial(values);
+		Material& material = resourceManager.getMaterial(handle);
+
 		Texture& texture =
 			resourceManager.getTextureManager().getTexture(values.albedo);
 
 		if (texture.format == GL_RGBA8) material.setTrasparencyFlag(true);
-
-		MaterialHandle handle = resourceManager.registerMaterial(material);
 
 		materialCache.insert({ i, handle });
 	}

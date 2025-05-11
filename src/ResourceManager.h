@@ -1,13 +1,22 @@
 #pragma once
 
-#include <filesystem>
 #include <map>
-#include <tuple>
 
 #include "Material.h"
 #include "Program.h"
 #include "Resources.h"
 #include "TextureManager.h"
+
+struct PBRMaterialValues {
+	TextureHandle albedo;
+	TextureHandle normal;
+	TextureHandle roughnessMetallic;
+	TextureHandle emission;
+	std::optional<glm::vec4> albedoColor = glm::vec4(0);
+	std::optional<float> roughnessValue = 1;
+	std::optional<float> metallicValue = 0;
+	std::optional<float> emissionValue = 0;
+};
 
 class ResourceManager {
 public:
@@ -18,11 +27,16 @@ public:
 	};
 
 private:
-	TextureManager m_textureManager;
+	std::unique_ptr<TextureManager> m_textureManager;
 
 	uint32_t m_nextMaterialHandleValue = 1;
 	uint32_t m_nextProgramHandleValue = 1;
-	uint32_t m_nextUBOHandleValue = 1;
+	uint32_t m_nextUBOHandleValue = 2;
+
+	UBOHandle m_pbrInstancesUBO = UBOHandle::UNASSIGNED;
+	UBOHandle m_texturesUBO = UBOHandle::UNASSIGNED;
+
+	uint32_t m_pbrInstances = 0;
 
 	std::map<MaterialHandle, Material> m_materials;
 	std::map<ProgramHandle, Program> m_programs;
@@ -30,21 +44,26 @@ private:
 
 	std::map<Program::Stages, ProgramHandle> m_programCache;
 
-	MaterialHandle registerMaterial(MaterialHandle handle, Material material);
 	template <typename T>
 	UBOHandle registerUBO(UBOHandle handle, T ubo, GLuint binding);
 
 public:
 	ResourceManager();
 
-	inline TextureManager& getTextureManager() { return m_textureManager; }
+	TextureManager& getTextureManager() { return *m_textureManager; }
 
-	MaterialHandle registerMaterial(Material material);
+	MaterialHandle registerMaterial(
+		Material material, MaterialHandle handle = MaterialHandle::UNASSIGNED
+	);
+	MaterialHandle registerMaterial(
+		PBRMaterialValues& values,
+		MaterialHandle handle = MaterialHandle::UNASSIGNED
+	);
 
-	inline Material& getMaterial(MaterialHandle handle) {
+	Material& getMaterial(MaterialHandle handle) {
 		return m_materials.at(handle);
 	}
-	inline const Material& getMaterial(MaterialHandle handle) const {
+	const Material& getMaterial(MaterialHandle handle) const {
 		return m_materials.at(handle);
 	}
 
@@ -52,20 +71,18 @@ public:
 		Program::Stages stages, ProgramHandle handle = ProgramHandle::UNASSIGNED
 	);
 
-	inline Program& getProgram(ProgramHandle handle) {
-		return m_programs.at(handle);
-	}
+	Program& getProgram(ProgramHandle handle) { return m_programs.at(handle); }
 
 	template <typename T>
 	UBOHandle registerUBO(T ubo, GLuint binding);
 	template <typename T>
 	UBOHandle updateUBO(UBOHandle handle, T ubo);
 
-	inline UBOData getUBO(UBOHandle handle) const { return m_ubos.at(handle); }
+	UBOData getUBO(UBOHandle handle) const { return m_ubos.at(handle); }
 };
 
 template <typename T>
-inline UBOHandle ResourceManager::registerUBO(
+UBOHandle ResourceManager::registerUBO(
 	UBOHandle handle, T uboData, GLuint binding
 ) {
 	GLuint ubo;
@@ -77,7 +94,7 @@ inline UBOHandle ResourceManager::registerUBO(
 	return handle;
 }
 template <typename T>
-inline UBOHandle ResourceManager::registerUBO(T uboData, GLuint binding) {
+UBOHandle ResourceManager::registerUBO(T uboData, GLuint binding) {
 	UBOHandle handle = UBOHandle { m_nextUBOHandleValue };
 
 	while (m_ubos.contains(handle)) {
@@ -88,7 +105,7 @@ inline UBOHandle ResourceManager::registerUBO(T uboData, GLuint binding) {
 	return registerUBO(handle, uboData, binding);
 }
 template <typename T>
-inline UBOHandle ResourceManager::updateUBO(UBOHandle handle, T ubo) {
+UBOHandle ResourceManager::updateUBO(UBOHandle handle, T ubo) {
 	assert(m_ubos.find(handle) != m_ubos.end());
 
 	UBOData uboData = m_ubos[handle];

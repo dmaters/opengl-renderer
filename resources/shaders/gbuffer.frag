@@ -10,26 +10,40 @@ out vec4 outNormal;
 out vec4 outPosition;
 out vec4 outRoughnessMetallic;
 
-layout(bindless_sampler) uniform sampler2D albedo;
-uniform vec4 albedo_color;
-layout(bindless_sampler) uniform sampler2D normal;
-layout(bindless_sampler) uniform sampler2D roughness_metallic;
-uniform float roughness_value;
-uniform float metallic_value;
+struct MaterialInstance {
+	uint albedo;
+	uint normal;
+	uint roughness_metallic;
+	uint components;
+	vec4 albedo_color;
+	float roughness_value;
+	float metallic_value;
+};
 
-uniform int components;
+layout(binding = 1) uniform _textures { sampler2D textures[128]; };
+
+layout(std140, binding = 2) uniform material_instances {
+	MaterialInstance instances[128];
+};
+
+uniform int instance_index;
 
 vec4 getAlbedo(vec2 uv) {
-	if ((components & 1 << 0) != 0) return albedo_color;
-	return texture(albedo, uv);
+	if ((instances[instance_index].components & 1 << 0) != 0)
+		return instances[instance_index].albedo_color;
+	return texture(textures[instances[instance_index].albedo], uv);
 }
 float getMetallic(vec2 uv) {
-	if ((components & 1 << 1) != 0) return metallic_value;
-	return texture(roughness_metallic, uv).b;
+	if ((instances[instance_index].components & 1 << 1) != 0)
+		return instances[instance_index].metallic_value;
+	return texture(textures[instances[instance_index].roughness_metallic], uv)
+	    .b;
 }
 float getRoughness(vec2 uv) {
-	if ((components & 1 << 2) != 0) return roughness_value;
-	return texture(roughness_metallic, uv).g;
+	if ((instances[instance_index].components & 1 << 2) != 0)
+		return instances[instance_index].roughness_value;
+	return texture(textures[instances[instance_index].roughness_metallic], uv)
+	    .g;
 }
 
 void main() {
@@ -46,7 +60,11 @@ void main() {
 	vec3 bitangent = normalize(f * (-duv2.x * dp1 + duv1.x * dp2));
 
 	mat3 TBN = mat3(tangent, bitangent, Normal);
-	vec3 localNormal = normalize(texture(normal, TexCoords).rgb * 2.0 - 1.0);
+	vec3 localNormal = normalize(
+		texture(textures[instances[instance_index].normal], TexCoords).rgb *
+			2.0 -
+		1.0
+	);
 	vec3 transformedNormal = TBN * localNormal;
 
 	outNormal = vec4(transformedNormal, 1);

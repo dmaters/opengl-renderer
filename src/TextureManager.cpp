@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <optional>
@@ -17,7 +18,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 using namespace std::literals::string_view_literals;
-TextureManager::TextureManager() { setupDefaultTextures(); }
+TextureManager::TextureManager(GLuint textureUBO) : m_textureUBO(textureUBO) {
+	setupDefaultTextures();
+}
 constexpr std::array CUBEMAP_FACES = { "right.png"sv, "left.png"sv,
 	                                   "top.png"sv,   "bottom.png"sv,
 	                                   "front.png"sv, "back.png"sv };
@@ -132,6 +135,12 @@ TextureHandle TextureManager::createTexture(
 		TextureHandle handle { m_nextHandle };
 		m_textures[handle] = texture;
 		m_nextHandle++;
+		glNamedBufferSubData(
+			m_textureUBO,
+			sizeof(uint64_t) * handle.value,
+			sizeof(uint64_t),
+			&textureHandle
+		);
 
 		return handle;
 	}
@@ -143,6 +152,13 @@ TextureHandle TextureManager::createTexture(
 	releaseTexture(overrideHandle);
 
 	m_textures[overrideHandle] = texture;
+
+	glNamedBufferSubData(
+		m_textureUBO,
+		sizeof(uint64_t) * overrideHandle.value,
+		sizeof(uint64_t),
+		&textureHandle
+	);
 
 	return overrideHandle;
 }

@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <variant>
 
+#include "Program.h"
 #include "Resources.h"
 #include "glm/ext/matrix_float3x3.hpp"
 
@@ -22,24 +23,9 @@ concept UniformDataValueType =
 	std::same_as<T, UBOHandle>;
 ;
 
-struct PBRMaterialValues {
-	TextureHandle albedo;
-	TextureHandle normal;
-	TextureHandle roughnessMetallic;
-	TextureHandle emission;
-	std::optional<glm::vec4> albedoColor = glm::vec4(0);
-	std::optional<float> roughnessValue = 1;
-	std::optional<float> metallicValue = 0;
-	std::optional<float> emissionValue = 0;
-};
-
 class ResourceManager;
 class Material {
 public:
-	static Material StandardPBRMaterial(PBRMaterialValues values);
-
-	static Material CustomMaterial(ProgramHandle program);
-
 	using UniformDataValue = std::variant<
 		float,
 		int,
@@ -66,10 +52,13 @@ private:
 	struct is_texture<TextureHandle> : std::true_type {};
 
 	std::unordered_map<std::string, UniformDataValue> m_uniformValues;
-	ProgramHandle m_program;
+	ProgramHandle m_program = ProgramHandle::UNASSIGNED;
 	bool m_trasparency = false;
 
 public:
+	Material() {}
+	Material(ProgramHandle program) : m_program(program) {}
+
 	void bind(ResourceManager& allocator);
 	void bind(ResourceManager& allocator, Material& oldMaterial);
 
