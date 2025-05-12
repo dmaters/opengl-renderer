@@ -152,6 +152,8 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 		m_gbufferFB.getAttachment(FrameBufferAttachment::COLOR3)
 	);
 	lightingMaterial.setUniform("irradiance_map", TextureHandle::IRRADIANCE);
+
+	lightingMaterial.setUniform("LightsData", m_lightsUBO);
 }
 
 void RenderPipeline::render(RenderSpecifications& specs) {
@@ -200,26 +202,6 @@ void RenderPipeline::render(RenderSpecifications& specs) {
 	renderFullscreenPass(m_lightingMaterial);
 	renderFullscreenPass(m_skyboxMaterial, true);
 
-	/*
-	std::vector<std::reference_wrapper<Primitive>> trasparentPrimitives =
-	specs.scene.getPrimitives([frustum,
-	resourceManager](Primitive& primitive) {
-	    const Material& material =
-	    resourceManager.getMaterial(primitive.getMaterialIndex());
-	    return material.getTrasparencyFlag() &&
-	    frustum.isSphereInFrustum(
-	        primitive.getPosition(), primitive.getSize()
-	    );
-	});
-
-	RenderPassSpecs trasparentPass {
-	    .primitives = trasparentPrimitives,
-	    .scene = specs.scene,
-	};
-
-	renderSubpass(trasparentPass);
-	*/
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	renderFullscreenPass(m_compositionMaterial);
@@ -236,6 +218,8 @@ void RenderPipeline::renderSubpass(RenderPassSpecs& renderPassSpecs) {
 		program = &m_resourceManager->getProgram(
 			m_resourceManager->getMaterial(currentMaterialHandle).getProgram()
 		);
+		m_resourceManager->getMaterial(currentMaterialHandle)
+			.bind(*m_resourceManager);
 	}
 
 	for (Primitive& primitive : renderPassSpecs.primitives) {
@@ -339,9 +323,6 @@ void RenderPipeline::renderShadowMaps(RenderSpecifications& specs) {
 			.primitives = primitives,
 			.scene = specs.scene,
 		};
-		glNamedFramebufferTexture(
-			m_shadowMapFB.getID(), GL_COLOR_ATTACHMENT0, 0, 0
-		);
 		renderSubpass(shadowMapPass);
 	}
 }
