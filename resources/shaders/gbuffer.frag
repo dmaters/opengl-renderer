@@ -47,7 +47,10 @@ float getRoughness(vec2 uv) {
 }
 
 void main() {
-	outAlbedo = getAlbedo(TexCoords);
+	vec4 albedo = getAlbedo(TexCoords);
+	if (albedo.w < .5) discard;
+
+	outAlbedo = albedo;
 
 	vec3 dp1 = dFdx(WorldPos);
 	vec3 dp2 = dFdy(WorldPos);
