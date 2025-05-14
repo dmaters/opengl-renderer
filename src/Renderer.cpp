@@ -13,7 +13,6 @@
 #include "glad/glad.h"
 #include "postprocessing/HDRBloom.h"
 
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/euler_angles.hpp>
@@ -23,8 +22,7 @@ Renderer::Renderer(
 	int width, int height, std::shared_ptr<ResourceManager> resourceManager
 ) :
 	m_resourceManager(resourceManager),
-	m_renderPipeline(std::make_unique<RenderPipeline>(m_resourceManager)),
-	m_bloom(std::make_unique<HDRBloom>(m_resourceManager)) {
+	m_renderPipeline(std::make_unique<RenderPipeline>(m_resourceManager)) {
 	setResolution(width, height);
 	glEnable(GL_BLEND);
 
@@ -35,8 +33,6 @@ Renderer::Renderer(
 }
 
 void Renderer::render(Scene& scene) {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
 	Camera& camera = scene.getCamera();
 
 	m_view = camera.getTransformationMatrix(true);

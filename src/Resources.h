@@ -17,6 +17,9 @@ struct ProgramHandle : public Handle<ProgramHandle> {
 };
 struct UBOHandle : public Handle<UBOHandle> {
 	static const UBOHandle PROJECTION_VIEW;
+	static const UBOHandle TEXTURES;
+	static const UBOHandle PBR_INSTANCES;
+	static const UBOHandle LIGHTS;
 };
 
 struct TextureHandle : public Handle<TextureHandle> {
@@ -24,7 +27,6 @@ struct TextureHandle : public Handle<TextureHandle> {
 	static const TextureHandle DEFAULT_NORMAL;
 	static const TextureHandle DEFAULT_ROUGHNESS_METALLIC;
 	static const TextureHandle DEFAULT_EMISSION;
-	static const TextureHandle IRRADIANCE;
 };
 
 template <typename T>

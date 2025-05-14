@@ -77,17 +77,20 @@ Application::Application() {
 Application::~Application() { glfwTerminate(); }
 
 void Application::run(std::filesystem::path scenePath) {
-	LightDescription light { .type = LightDescription::Type::Directional,
-		                     .position = glm::vec3(0, 300, 0),
-		                     .direction = glm::vec3(0, -1, 0),
-		                     .color = glm::vec3(1, 1, 1),
-		                     .intensity = 50 };
-
 	double previousTime = glfwGetTime();
 	bool toggleSpeed = false;
 
 	Scene scene = SceneLoader::Load(scenePath, *m_resourceManager);
+	/*
+	LightDescription light {
+	    .type = LightDescription::Type::Directional,
+	    .position = glm::vec3(0, 300, 0),
+	    .direction = glm::vec3(0, -1, 0),
+	    .color = glm::vec3(1, 1, 1),
+	    .intensity = 50,
+	};
 	scene.addLight(light);
+	*/
 
 	Camera& camera = scene.getCamera();
 	camera.setPosition(glm::vec3(0, 0, 20));
@@ -96,18 +99,10 @@ void Application::run(std::filesystem::path scenePath) {
 	orientation[2] = -orientation[2];
 	camera.setOrientation(orientation);
 
-	LightDescription pointLightDesc { .type = LightDescription::Type::Point,
-		                              .position = glm::vec3(0, 0, 0),
-
-		                              .color = glm::vec3(1, 1, 1),
-		                              .intensity = 500 };
-
-	// scene.addLight(pointLightDesc);
-
 	while (!glfwWindowShouldClose(m_window)) {
-		float currentTime = glfwGetTime();
+		double currentTime = glfwGetTime();
 
-		double delta = currentTime - previousTime;
+		float delta = (float)(currentTime - previousTime);
 
 		processInput(delta);
 

@@ -33,9 +33,6 @@ private:
 	uint32_t m_nextProgramHandleValue = 1;
 	uint32_t m_nextUBOHandleValue = 2;
 
-	UBOHandle m_pbrInstancesUBO = UBOHandle::UNASSIGNED;
-	UBOHandle m_texturesUBO = UBOHandle::UNASSIGNED;
-
 	uint32_t m_pbrInstances = 0;
 
 	std::map<MaterialHandle, Material> m_materials;
@@ -43,6 +40,8 @@ private:
 	std::map<UBOHandle, UBOData> m_ubos;
 
 	std::map<Program::Stages, ProgramHandle> m_programCache;
+
+	GLuint m_quadVao = 0;
 
 	template <typename T>
 	UBOHandle registerUBO(UBOHandle handle, T ubo, GLuint binding);
@@ -79,6 +78,11 @@ public:
 	UBOHandle updateUBO(UBOHandle handle, T ubo);
 
 	UBOData getUBO(UBOHandle handle) const { return m_ubos.at(handle); }
+
+	GLuint getQuadVAO() {
+		if (m_quadVao == 0) glGenVertexArrays(1, &m_quadVao);
+		return m_quadVao;
+	}
 };
 
 template <typename T>

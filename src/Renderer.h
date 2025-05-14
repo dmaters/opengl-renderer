@@ -1,21 +1,17 @@
 #pragma once
 
 #include <memory>
-#include <optional>
 
 #include "Material.h"
 #include "ResourceManager.h"
 #include "Scene.h"
-#include "postprocessing/HDRBloom.h"
 #include "renderpipeline/RenderPipeline.h"
+
 
 class Renderer {
 private:
 	std::shared_ptr<ResourceManager> m_resourceManager;
-
 	std::unique_ptr<RenderPipeline> m_renderPipeline;
-
-	std::unique_ptr<HDRBloom> m_bloom;
 
 	glm::mat4 m_projection, m_view;
 

@@ -8,7 +8,7 @@
 
 class ComputeShader : public Program {
 public:
-	inline ComputeShader(std::filesystem::path path) : Program(path) {}
+	ComputeShader(std::filesystem::path path) : Program(path) {}
 	void dispatch(glm::ivec3 axis);
 
 	using Program::setUniform;

@@ -18,7 +18,22 @@
 #include "glad/glad.h"
 #include "glm/ext/vector_float4.hpp"
 
-ResourceManager::ResourceManager() : m_textureManager() {
+struct alignas(16) PBRMaterialInstance {
+	uint32_t albedo = 0;
+	uint32_t normal = 0;
+	uint32_t roughnessMetallic = 0;
+	uint32_t components = 0;
+	glm::vec4 albedo_color = glm::vec4(0);
+	float roughness_value = 0;
+	float metallic_value = 0;
+	uint32_t _padding = 0;
+};
+
+struct PBRMaterialInstancesUBO {
+	PBRMaterialInstance instances[128];
+};
+
+ResourceManager::ResourceManager() {
 	registerProgram(
 		Program::Stages { .vertex = "resources/shaders/gbuffer.vert",
 	                      .fragment = "resources/shaders/gbuffer.frag" },
@@ -31,16 +46,18 @@ ResourceManager::ResourceManager() : m_textureManager() {
 		TextureHandle::DEFAULT_EMISSION,
 	};
 
-	registerMaterial(defaultInstance, MaterialHandle::DEFAULT);
-
 	Primitive::ViewProjectionUniformBuffer vpUBO = {};
 	registerUBO(UBOHandle::PROJECTION_VIEW, vpUBO, 0);
 
 	std::array<uint64_t, MAX_TEXTURE_COUNT> textures = {};
-	m_texturesUBO = registerUBO(textures, 1);
+	registerUBO(UBOHandle::TEXTURES, textures, 1);
+	registerUBO(UBOHandle::PBR_INSTANCES, PBRMaterialInstancesUBO {}, 2);
+	registerUBO(UBOHandle::LIGHTS, Light::LightUniformBuffer {}, 3);
+
+	registerMaterial(defaultInstance, MaterialHandle::DEFAULT);
 
 	m_textureManager =
-		std::make_unique<TextureManager>(getUBO(m_texturesUBO).id);
+		std::make_unique<TextureManager>(getUBO(UBOHandle::TEXTURES).id);
 };
 
 MaterialHandle ResourceManager::registerMaterial(
@@ -59,21 +76,6 @@ MaterialHandle ResourceManager::registerMaterial(
 	m_materials[handle] = material;
 	return handle;
 }
-
-struct alignas(16) PBRMaterialInstance {
-	uint32_t albedo = 0;
-	uint32_t normal = 0;
-	uint32_t roughnessMetallic = 0;
-	uint32_t components = 0;
-	glm::vec4 albedo_color = glm::vec4(0);
-	float roughness_value = 0;
-	float metallic_value = 0;
-	uint32_t _padding = 0;
-};
-
-struct PBRMaterialInstancesUBO {
-	PBRMaterialInstance instances[128];
-};
 
 enum class PBRComponents : uint8_t {
 	NONE = 0,
@@ -146,13 +148,11 @@ MaterialHandle ResourceManager::registerMaterial(
 	PBRMaterialValues& values, MaterialHandle handle
 ) {
 	assert(m_pbrInstances < 128);
-	if (m_pbrInstancesUBO == UBOHandle::UNASSIGNED)
-		m_pbrInstancesUBO = registerUBO(PBRMaterialInstancesUBO {}, 2);
 
 	Material material = Material(ProgramHandle::GBUFFER);
 	PBRMaterialInstance instance = valueToInstance(values);
 
-	UBOData ubo = getUBO(m_pbrInstancesUBO);
+	UBOData ubo = getUBO(UBOHandle::PBR_INSTANCES);
 
 	glNamedBufferSubData(
 		ubo.id,
@@ -161,8 +161,8 @@ MaterialHandle ResourceManager::registerMaterial(
 		&instance
 	);
 
-	material.setUniform("material_instances", m_pbrInstancesUBO);
-	material.setUniform("_textures", m_texturesUBO);
+	material.setUniform("material_instances", UBOHandle::PBR_INSTANCES);
+	material.setUniform("_textures", UBOHandle::TEXTURES);
 
 	material.setUniform("instance_index", (int32_t)m_pbrInstances);
 	material.setUniform("projection_view", UBOHandle::PROJECTION_VIEW);

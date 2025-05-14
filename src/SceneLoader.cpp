@@ -64,7 +64,7 @@ glm::mat4 getBaseTransform(aiNode& node, const aiScene& scene) {
 
 Primitive loadMesh(
 	aiMesh& mesh,
-	std::unordered_map<uint32_t, MaterialHandle>& materialCache,
+
 	ResourceManager& resourceManager
 ) {
 	std::vector<unsigned char> vertices;
@@ -112,10 +112,9 @@ Primitive loadMesh(
 		                                .indicesFormat = GL_UNSIGNED_INT };
 	VertexArray vao(specs);
 
-	return Primitive(vao, materialCache.at(mesh.mMaterialIndex), colliderSize);
+	return Primitive(vao, mesh.mMaterialIndex + 1, colliderSize);
 }
 struct SceneLoadSpecs {
-	std::unordered_map<uint32_t, MaterialHandle> materialCache;
 	Scene& baseScene;
 	const aiScene& importedScene;
 	ResourceManager& resourceManager;
@@ -138,7 +137,6 @@ void loadScene(aiNode& root, SceneLoadSpecs specs) {
 		for (uint32_t i = 0; i < root.mNumMeshes; i++) {
 			specs.baseScene.m_primitives.push_back(loadMesh(
 				*specs.importedScene.mMeshes[root.mMeshes[i]],
-				specs.materialCache,
 				specs.resourceManager
 			));
 		}
@@ -169,12 +167,11 @@ TextureHandle loadTexture(TextureLoadSpecs specs) {
 	return handle;
 }
 
-std::unordered_map<uint32_t, MaterialHandle> loadMaterials(
+void loadMaterials(
 	const aiScene& scene,
 	std::filesystem::path& texturePath,
 	ResourceManager& resourceManager
 ) {
-	std::unordered_map<uint32_t, MaterialHandle> materialCache;
 	std::unordered_map<aiString*, TextureHandle> textureCache;
 
 	for (uint32_t i = 0; i < scene.mNumMaterials; i++) {
@@ -234,11 +231,7 @@ std::unordered_map<uint32_t, MaterialHandle> loadMaterials(
 			resourceManager.getTextureManager().getTexture(values.albedo);
 
 		if (texture.format == GL_RGBA8) material.setTrasparencyFlag(true);
-
-		materialCache.insert({ i, handle });
 	}
-
-	return materialCache;
 }
 
 Scene SceneLoader::Load(
@@ -249,14 +242,13 @@ Scene SceneLoader::Load(
 		path.string().c_str(), aiProcessPreset_TargetRealtime_Quality
 	);
 	auto folderPath = path.parent_path();
-	auto materialCache = loadMaterials(*import, folderPath, resourceManager);
+	loadMaterials(*import, folderPath, resourceManager);
 
 	Scene scene;
 
 	loadScene(
 		*import->mRootNode,
 		{
-			.materialCache = materialCache,
 			.baseScene = scene,
 			.importedScene = *import,
 			.resourceManager = resourceManager,

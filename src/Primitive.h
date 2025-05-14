@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "Node.h"
 #include "Resources.h"
 #include "VertexArray.h"
@@ -13,18 +15,18 @@ public:
 
 private:
 	VertexArray m_vertexArray;
-	MaterialHandle m_material;
+	uint32_t m_materialIndex;
 	float m_size = 0;
 
 public:
-	Primitive(
-		VertexArray vertexArray, MaterialHandle materialHandle, float size
-	) :
-		m_vertexArray(vertexArray), m_material(materialHandle), m_size(size) {}
+	Primitive(VertexArray vertexArray, uint32_t materialIndex, float size) :
+		m_vertexArray(vertexArray),
+		m_materialIndex(materialIndex),
+		m_size(size) {}
 
-	inline void setSize(float size) { m_size = size; }
+	void setSize(float size) { m_size = size; }
 
-	inline MaterialHandle getMaterialIndex() const { return m_material; }
-	inline const VertexArray& getVertexArray() const { return m_vertexArray; }
-	inline float getSize() const { return m_size; }
+	uint32_t getMaterialIndex() const { return m_materialIndex; }
+	const VertexArray& getVertexArray() const { return m_vertexArray; }
+	float getSize() const { return m_size; }
 };

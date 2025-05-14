@@ -17,7 +17,7 @@ public:
 	struct TextureData;
 
 private:
-	uint32_t m_nextHandle = 6;
+	uint32_t m_nextHandle = 5;
 	GLuint m_textureUBO = 0;
 	std::map<TextureHandle, Texture> m_textures;
 
