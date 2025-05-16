@@ -11,14 +11,15 @@ struct GBufferOutput;
 
 class LightingPass {
 private:
-	MaterialHandle m_lightingMaterial;
-	std::optional<FullscreenPass> m_pass;
+	std::optional<FullscreenPass> m_directLightingPass;
+	std::optional<FullscreenPass> m_iblPass;
 	FrameBuffer m_finalFB;
 
 public:
 	LightingPass(
 		GBufferOutput gbufferData,
-		TextureHandle irradianceOutput,
+		TextureHandle diffuseIrradiance,
+		TextureHandle specularIrradiance,
 		ResourceManager& resourceManager
 	);
 	void render(glm::ivec2 resolution, ResourceManager& resourceManager);

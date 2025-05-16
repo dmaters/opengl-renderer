@@ -21,7 +21,7 @@
 struct alignas(16) PBRMaterialInstance {
 	uint32_t albedo = 0;
 	uint32_t normal = 0;
-	uint32_t roughnessMetallic = 0;
+	uint32_t metallicRoughness = 0;
 	uint32_t components = 0;
 	glm::vec4 albedo_color = glm::vec4(0);
 	float roughness_value = 0;
@@ -110,10 +110,10 @@ PBRMaterialInstance valueToInstance(PBRMaterialValues& values) {
 	                      ? values.normal.value
 	                      : TextureHandle::DEFAULT_NORMAL.value;
 
-	// Roughness - Metallic
+	// Metallic Roughness
 
-	if (values.roughnessMetallic != TextureHandle::UNASSIGNED)
-		instance.roughnessMetallic = values.roughnessMetallic.value;
+	if (values.metallicRoughness != TextureHandle::UNASSIGNED)
+		instance.metallicRoughness = values.metallicRoughness.value;
 	else {
 		if (values.roughnessValue.has_value()) {
 			instance.roughness_value = values.roughnessValue.value();
@@ -123,7 +123,7 @@ PBRMaterialInstance valueToInstance(PBRMaterialValues& values) {
 			instance.metallic_value = values.metallicValue.value();
 			components = components | PBRComponents::METALLIC_VALUE;
 		}
-		instance.roughnessMetallic =
+		instance.metallicRoughness =
 			TextureHandle::DEFAULT_ROUGHNESS_METALLIC.value;
 	}
 

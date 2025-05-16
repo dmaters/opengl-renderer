@@ -1,0 +1,101 @@
+#version 460 core
+#extension GL_ARB_bindless_texture : require
+
+layout(local_size_x = 1) in;
+
+layout(bindless_sampler) uniform sampler2D environment_map;
+layout(bindless_image, rgba16f) writeonly uniform imageCube irradiance_map;
+uniform int current_level;
+
+#define SAMPLE_COUNT 1024
+#define PI           3.1415926535897932384626433832795
+
+vec2 sampleEquirectangular(vec3 dir) {
+	dir = normalize(dir);
+	float u = atan(dir.z, dir.x) / (2.0 * PI) + 0.5;
+	float v = acos(clamp(-dir.y, -1.0, 1.0)) / PI;
+	return vec2(u, v);
+}
+vec3 getCubemapNormal(uint face, ivec2 texelCoords) {
+	vec2 uv = (texelCoords + 0.5) / gl_NumWorkGroups.xy;
+	vec2 ndc = uv * 2.0 - 1.0;
+
+	switch (face) {
+		case 0:
+			return normalize(vec3(+1, -ndc.y, -ndc.x));
+		case 1:
+			return normalize(vec3(-1, -ndc.y, +ndc.x));
+		case 2:
+			return normalize(vec3(+ndc.x, +1, +ndc.y));
+		case 3:
+			return normalize(vec3(+ndc.x, -1, -ndc.y));
+		case 4:
+			return normalize(vec3(+ndc.x, -ndc.y, +1));
+		case 5:
+			return normalize(vec3(-ndc.x, -ndc.y, -1));
+		default:
+			return vec3(0.0);
+	}
+}
+
+float radicalInverse_VdC(uint bits) {
+	bits = (bits << 16u) | (bits >> 16u);
+	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+	return float(bits) * 2.3283064365386963e-10;
+}
+
+vec2 hammersley(uint i) {
+	return vec2(float(i) / float(SAMPLE_COUNT), radicalInverse_VdC(i));
+}
+
+vec3 distributionGGX(vec2 Xi, vec3 N) {
+	float roughness = max(0.2 * current_level, 0.05);
+	float a = roughness * roughness;
+
+	float phi = 2.0 * PI * Xi.x;
+	float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+
+	vec3 H;
+	H.x = cos(phi) * sinTheta;
+	H.y = sin(phi) * sinTheta;
+	H.z = cosTheta;
+
+	vec3 up = abs(N.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+	vec3 tangent = normalize(cross(up, N));
+	vec3 bitangent = cross(N, tangent);
+
+	vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
+	return normalize(sampleVec);
+}
+void main() {
+	ivec2 texelCoords = ivec2(gl_WorkGroupID.xy);
+	uint face = gl_WorkGroupID.z;
+
+	vec3 N = getCubemapNormal(face, texelCoords);
+
+	vec3 R = N;
+	vec3 V = R;
+
+	float totalWeight = 0.0;
+	vec3 prefilteredColor = vec3(0.0);
+	for (uint i = 0u; i < SAMPLE_COUNT; ++i) {
+		vec2 Xi = hammersley(i);
+		vec3 H = distributionGGX(Xi, N);
+		vec3 L = normalize(2.0 * dot(V, H) * H - V);
+
+		float NdotL = max(dot(N, L), 0.0);
+		if (NdotL > 0.0) {
+			prefilteredColor +=
+				texture(environment_map, sampleEquirectangular(L)).rgb * NdotL;
+			totalWeight += NdotL;
+		}
+	}
+	prefilteredColor = prefilteredColor / totalWeight;
+	imageStore(
+		irradiance_map, ivec3(texelCoords, face), vec4(prefilteredColor, 1)
+	);
+}

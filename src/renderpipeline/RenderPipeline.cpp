@@ -40,9 +40,11 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 	m_shadowPass = ShadowPass(*resourceManager);
 	m_irradiancePass = IrradiancePass(skybox, *resourceManager);
 	m_gbufferPass = GBufferPass(*resourceManager);
+
 	m_lightingPass = LightingPass(
 		m_gbufferPass->getOutput(),
-		m_irradiancePass->computeIrradiance(),
+		m_irradiancePass->getDiffuseMap(),
+		m_irradiancePass->getSpecularMap(),
 		*resourceManager
 	);
 	m_skyboxPass = SkyboxPass(skybox, *resourceManager);
@@ -53,13 +55,15 @@ RenderPipeline::RenderPipeline(std::shared_ptr<ResourceManager> resourceManager
 
 void RenderPipeline::render(RenderSpecifications& specs) {
 	if (!m_shadowmapsGenerated) {
-		m_shadowPass.value().render(specs.scene, *m_resourceManager);
+		m_shadowPass->render(specs.scene, *m_resourceManager);
 		m_shadowmapsGenerated = true;
 	}
+	if (!m_iblGenerated) {
+		m_irradiancePass->computeIrradiance(*m_resourceManager);
+		m_iblGenerated = true;
+	}
 
-	m_gbufferPass.value().render(
-		specs.resolution, specs.scene, *m_resourceManager
-	);
+	m_gbufferPass->render(specs.resolution, specs.scene, *m_resourceManager);
 	m_lightingPass->render(specs.resolution, *m_resourceManager);
 	m_skyboxPass->render(*m_resourceManager);
 	m_compositionPass->render(*m_resourceManager);

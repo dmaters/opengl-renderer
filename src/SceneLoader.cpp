@@ -211,17 +211,17 @@ void loadMaterials(
 			values.emissionValue = emissiveValue;
 
 		specs.type = aiTextureType_GLTF_METALLIC_ROUGHNESS;
-		values.roughnessMetallic = loadTexture(specs);
+		values.metallicRoughness = loadTexture(specs);
 		float metallicValue;
 		if (materialInstance->Get(AI_MATKEY_METALLIC_FACTOR, metallicValue) ==
 		        AI_SUCCESS &&
-		    values.roughnessMetallic != TextureHandle::UNASSIGNED)
+		    values.metallicRoughness != TextureHandle::UNASSIGNED)
 			values.metallicValue = metallicValue;
 
 		float roughnessValue;
 		if (materialInstance->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessValue) ==
 		        AI_SUCCESS &&
-		    values.roughnessMetallic != TextureHandle::UNASSIGNED)
+		    values.metallicRoughness != TextureHandle::UNASSIGNED)
 			values.roughnessValue = roughnessValue;
 
 		MaterialHandle handle = resourceManager.registerMaterial(values);

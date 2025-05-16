@@ -104,7 +104,7 @@ FrameBuffer FrameBuffer::getGBufferPassFB(
 		textureManager.createTexture(normal),
 		textureManager
 	);
-	TextureManager::TextureSpecification roughnessMetallic = {
+	TextureManager::TextureSpecification metallicRoughness = {
 		.definition = {
 			.format = GL_RG16F,
 			.width = resolution.x,
@@ -114,7 +114,7 @@ FrameBuffer FrameBuffer::getGBufferPassFB(
 
 	fb.setAttachment(
 		FrameBufferAttachment::COLOR3,
-		textureManager.createTexture(roughnessMetallic),
+		textureManager.createTexture(metallicRoughness),
 		textureManager
 	);
 

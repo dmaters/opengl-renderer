@@ -10,16 +10,14 @@ in vec2 TexCoord;
 layout(bindless_sampler) uniform sampler2D _albedo;
 layout(bindless_sampler) uniform sampler2D _normal;
 layout(bindless_sampler) uniform sampler2D _world_position;
-layout(bindless_sampler) uniform sampler2D _roughness_metallic;
+layout(bindless_sampler) uniform sampler2D _metallic_roughness;
 
-layout(bindless_sampler) uniform samplerCube irradiance_map;
+#define PI 3.1415926535897932384626433832795
 
 layout(std140, binding = 0) uniform projection_view {
 	mat4 view;
 	mat4 projection;
 };
-
-#define PI 3.1415926535897932384626433832795
 
 struct Light {
 	vec4 color;
@@ -33,8 +31,6 @@ layout(std140, binding = 3) uniform LightsData {
 	uint scene_light;
 	Light[2] lights;
 };
-
-layout(location = 3) uniform samplerCube skybox;
 
 float nonLinearToLinearDepth(float nonLinearDepth, mat4 projectionMatrix) {
 	float a = projectionMatrix[2][2];
@@ -101,8 +97,8 @@ float geometrySmith(float NdotV, float NdotL, float a) {
 
 vec3 microfacetBRDF(vec2 uv, vec3 viewDir, vec3 lightDir) {
 	vec3 halfview = normalize(viewDir + lightDir);
-	float roughness = texture(_roughness_metallic, uv).r;
-	float metallic = texture(_roughness_metallic, uv).g;
+	float roughness = max(texture(_metallic_roughness, uv).b, 0.05);
+	float metallic = texture(_metallic_roughness, uv).r;
 	vec3 albedo = texture(_albedo, uv).rgb;
 	vec3 norm = texture(_normal, uv).rgb;
 
@@ -113,7 +109,7 @@ vec3 microfacetBRDF(vec2 uv, vec3 viewDir, vec3 lightDir) {
 
 	vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
-	float a = max(roughness * roughness, 0.002025);
+	float a = roughness * roughness;
 
 	float NDF = distributionGGX(NdotH, a);
 	vec3 F = fresnelSchlick(HdotV, F0);
@@ -152,21 +148,6 @@ void main() {
 		brdf += shadow * irradiance * lights[i].color.xyz * lights[i].color.w /
 		        (pow(length(light_dir), 2) * 4 * PI);
 	}
-
-	float roughness = texture(_roughness_metallic, TexCoord).r;
-	float metallic = texture(_roughness_metallic, TexCoord).g;
-	vec3 albedo = texture(_albedo, TexCoord).rgb;
-	vec3 norm = texture(_normal, TexCoord).rgb;
-
-	vec3 ambientIrradiance = texture(irradiance_map, norm).rgb;
-
-	vec3 F0 = mix(vec3(0.04), albedo, metallic);
-	vec3 F = fresnelSchlick(max(dot(norm, view_dir), 0.0), F0);
-
-	vec3 kD = (1.0 - F) * (1.0 - metallic);
-	vec3 ambient = kD * albedo * ambientIrradiance / PI;
-
-	brdf += ambient;
 
 	FragColor = vec4(brdf, 1);
 }

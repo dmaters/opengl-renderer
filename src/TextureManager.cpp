@@ -228,7 +228,7 @@ void TextureManager::setupDefaultTextures() {
 		0x00,
 	};
 
-	TextureManager::TextureSpecification roughnessMetallicSpecs = {
+	TextureManager::TextureSpecification metallicRoughnessSpecs = {
 		.definition = { 
 			.filtering = GL_NEAREST,
 			.format = GL_RGB8,
@@ -246,7 +246,7 @@ void TextureManager::setupDefaultTextures() {
 	};
 
 	TextureManager::createTexture(
-		roughnessMetallicSpecs, TextureHandle::DEFAULT_ROUGHNESS_METALLIC
+		metallicRoughnessSpecs, TextureHandle::DEFAULT_ROUGHNESS_METALLIC
 	);
 
 	//---------EMISSION---------

@@ -10,7 +10,7 @@
 struct PBRMaterialValues {
 	TextureHandle albedo;
 	TextureHandle normal;
-	TextureHandle roughnessMetallic;
+	TextureHandle metallicRoughness;
 	TextureHandle emission;
 	std::optional<glm::vec4> albedoColor = glm::vec4(0);
 	std::optional<float> roughnessValue = 1;

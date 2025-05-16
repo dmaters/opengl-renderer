@@ -26,6 +26,7 @@ public:
 
 private:
 	bool m_shadowmapsGenerated = false;
+	bool m_iblGenerated = false;
 
 	std::optional<ShadowPass> m_shadowPass;
 	std::optional<IrradiancePass> m_irradiancePass;
