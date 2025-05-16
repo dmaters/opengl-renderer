@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <assimp/Importer.hpp>
 #include <cassert>
+#include <cstddef>
 #include <filesystem>
 #include <string>
 
@@ -67,34 +68,33 @@ Primitive loadMesh(
 
 	ResourceManager& resourceManager
 ) {
-	std::vector<unsigned char> vertices;
+	std::vector<std::byte> vertices;
 	float colliderSize = 0;
 	for (int i = 0; i < mesh.mNumVertices; i++) {
 		aiVector3t<float> position = mesh.mVertices[i];
 
 		colliderSize = std::max(position.Length(), colliderSize);
 		vertices.insert(
-			vertices.end(),
-			(unsigned char*)&position,
-			(unsigned char*)&position + 12
+			vertices.end(), (std::byte*)&position, (std::byte*)&position + 12
 		);
 
 		aiVector3t<float> normal = mesh.mNormals[i];
 		vertices.insert(
-			vertices.end(),
-			(unsigned char*)&normal,
-			(unsigned char*)&normal + 12
+			vertices.end(), (std::byte*)&normal, (std::byte*)&normal + 12
+		);
+
+		aiVector3t<float> tangent = mesh.mTangents[i];
+		vertices.insert(
+			vertices.end(), (std::byte*)&tangent, (std::byte*)&tangent + 12
 		);
 
 		aiVector3D textCoord = mesh.mTextureCoords[0][i];
 		vertices.insert(
-			vertices.end(),
-			(unsigned char*)&textCoord,
-			(unsigned char*)&textCoord + 8
+			vertices.end(), (std::byte*)&textCoord, (std::byte*)&textCoord + 8
 		);
 	}
 
-	std::vector<unsigned char> indices;
+	std::vector<std::byte> indices;
 	for (int i = 0; i < mesh.mNumFaces; i++) {
 		aiFace face = mesh.mFaces[i];
 
@@ -102,15 +102,12 @@ Primitive loadMesh(
 
 		indices.insert(
 			indices.end(),
-			(unsigned char*)face.mIndices,
-			(unsigned char*)face.mIndices + 12
+			(std::byte*)face.mIndices,
+			(std::byte*)face.mIndices + 12
 		);
 	}
-	VertexArray::Specifications specs { .type = VertexArray::Type::STATIC_MESH,
-		                                .vertices = vertices,
-		                                .indices = indices,
-		                                .indicesFormat = GL_UNSIGNED_INT };
-	VertexArray vao(specs);
+
+	VertexArray vao(vertices, indices, GL_UNSIGNED_INT);
 
 	return Primitive(vao, mesh.mMaterialIndex + 1, colliderSize);
 }

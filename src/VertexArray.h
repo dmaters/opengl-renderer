@@ -1,29 +1,14 @@
 #pragma once
+#include <cstddef>
 #include <glm/glm.hpp>
 #include <memory>
 #include <span>
 
 #include "IndexBuffer.h"
 #include "VertexBuffer.h"
+#include "glad/glad.h"
 
 class VertexArray {
-public:
-	enum Type {
-		STATIC_MESH
-	};
-
-	struct StaticMeshLayout {
-		glm::vec3 position;
-		glm::vec3 normal;
-		glm::vec2 texcoord;
-	};
-	struct Specifications {
-		Type type;
-		std::span<unsigned char> vertices;
-		std::span<unsigned char> indices;
-		GLenum indicesFormat;
-	};
-
 private:
 	GLuint m_arrayID;
 	uint32_t m_meshID = 0;
@@ -34,7 +19,11 @@ private:
 	void StaticMeshDefinition();
 
 public:
-	VertexArray(Specifications& specs);
+	VertexArray(
+		std::vector<std::byte>& vertices,
+		std::vector<std::byte>& indices,
+		GLenum indexFormat
+	);
 	inline uint32_t getIndexCount() const { return m_indexBuffer.getCount(); }
 	inline GLenum getIndexFormat() const { return m_indexBuffer.getFormat(); }
 	inline GLuint getID() const { return m_arrayID; }

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <map>
-#include <span>
+#include <cstddef>
+#include <vector>
 
 #include "glad/glad.h"
 
@@ -10,7 +10,7 @@ private:
 	GLuint m_glID;
 
 public:
-	VertexBuffer(std::span<unsigned char> data);
+	VertexBuffer(std::vector<std::byte>& data);
 
 	inline GLuint getID() const { return m_glID; }
 };

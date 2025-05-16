@@ -2,9 +2,12 @@
 
 layout(location = 0) in vec3 i_Position;
 layout(location = 1) in vec3 i_Normal;
-layout(location = 2) in vec2 i_TextCoords;
+layout(location = 2) in vec3 i_Tangent;
+layout(location = 3) in vec2 i_TextCoords;
 
 out vec3 Normal;
+out vec3 Tangent;
+out vec3 BiTangent;
 out vec2 TexCoords;
 out vec3 WorldPos;
 
@@ -18,6 +21,8 @@ void main() {
 	gl_Position = projection * view * model * vec4(i_Position, 1);
 
 	Normal = i_Normal;
+	Tangent = i_Tangent;
+	BiTangent = cross(i_Tangent, i_Normal);
 	TexCoords = i_TextCoords;
 	WorldPos = (model * vec4(i_Position, 1)).xyz;
 }

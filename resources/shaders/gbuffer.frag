@@ -2,6 +2,8 @@
 #extension GL_ARB_bindless_texture : require
 
 in vec3 Normal;
+in vec3 Tangent;
+in vec3 BiTangent;
 in vec2 TexCoords;
 in vec3 WorldPos;
 
@@ -52,17 +54,7 @@ void main() {
 
 	outAlbedo = albedo;
 
-	vec3 dp1 = dFdx(WorldPos);
-	vec3 dp2 = dFdy(WorldPos);
-	vec2 duv1 = dFdx(TexCoords);
-	vec2 duv2 = dFdy(TexCoords);
-
-	float f = 1.0 / (duv1.x * duv2.y - duv2.x * duv1.y);
-
-	vec3 tangent = normalize(f * (duv2.y * dp1 - duv1.y * dp2));
-	vec3 bitangent = normalize(f * (-duv2.x * dp1 + duv1.x * dp2));
-
-	mat3 TBN = mat3(tangent, bitangent, Normal);
+	mat3 TBN = mat3(Tangent, BiTangent, Normal);
 	vec3 localNormal = normalize(
 		texture(textures[instances[instance_index].normal], TexCoords).rgb *
 			2.0 -
