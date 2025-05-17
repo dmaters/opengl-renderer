@@ -21,10 +21,7 @@ constexpr GLenum attachmentTypeToEnum(FrameBufferAttachment attachment) {
 			return GL_COLOR_ATTACHMENT3;
 			break;
 		case FrameBufferAttachment::DEPTH:
-			return GL_DEPTH_ATTACHMENT;
-			break;
-		case FrameBufferAttachment::STENCIL:
-			return GL_STENCIL_ATTACHMENT;
+			return GL_DEPTH_STENCIL_ATTACHMENT;
 			break;
 	}
 }
@@ -38,7 +35,7 @@ FrameBuffer FrameBuffer::getShadowMapFB(
 	glCreateFramebuffers(1, &fb.m_framebuffer);
 	TextureManager::TextureSpecification depthSpecs = {
 		.definition = {
-			.format = GL_DEPTH_COMPONENT24,
+			.format = GL_DEPTH24_STENCIL8,
 			.width = resolution.x,
 			.height = resolution.y,
 		},
@@ -61,7 +58,8 @@ FrameBuffer FrameBuffer::getGBufferPassFB(
 	FrameBuffer fb;
 	fb.m_clearOnBind = true;
 	fb.m_resolution = resolution;
-	fb.m_clearMask = GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT;
+	fb.m_clearMask =
+		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_COLOR_BUFFER_BIT;
 
 	glCreateFramebuffers(1, &fb.m_framebuffer);
 
@@ -120,7 +118,8 @@ FrameBuffer FrameBuffer::getGBufferPassFB(
 
 	TextureManager::TextureSpecification depthSpecs = {
 		.definition = {
-			.format = GL_DEPTH_COMPONENT24,
+			.format = GL_DEPTH24_STENCIL8,
+			
 			.width = resolution.x,
 			.height = resolution.y,
 		},

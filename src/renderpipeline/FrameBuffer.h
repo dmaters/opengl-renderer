@@ -14,7 +14,7 @@ enum class FrameBufferAttachment {
 	COLOR2,
 	COLOR3,
 	DEPTH,
-	STENCIL
+	DEPTH_STENCIL
 };
 
 class FrameBuffer {

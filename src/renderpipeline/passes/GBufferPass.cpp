@@ -2,6 +2,7 @@
 
 #include "ResourceManager.h"
 #include "Scene.h"
+#include "glad/glad.h"
 #include "renderpipeline/BasePass.h"
 
 GBufferPass::GBufferPass(ResourceManager& resourceManager) {
@@ -27,8 +28,10 @@ void GBufferPass::render(
 				primitive.getPosition(), primitive.getSize()
 			);
 		});
-
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0xFF);
 	m_pass.value().render(primitives, resourceManager);
+	glStencilMask(0x00);
 }
 
 GBufferOutput GBufferPass::getOutput() {

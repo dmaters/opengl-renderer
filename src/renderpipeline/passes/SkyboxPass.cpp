@@ -19,9 +19,10 @@ SkyboxPass::SkyboxPass(TextureHandle skybox, ResourceManager& resourceManager) {
 	material.setUniform("projection_view", UBOHandle::PROJECTION_VIEW);
 	material.setUniform("skybox", skybox);
 
-	m_pass = FullscreenPass(handle, true);
+	m_pass = FullscreenPass(handle);
 }
 
 void SkyboxPass::render(ResourceManager& resourceManager) {
+	glStencilFunc(GL_EQUAL, 0, 0xFF);
 	m_pass.value().render(resourceManager);
 }

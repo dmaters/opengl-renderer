@@ -371,13 +371,17 @@ TextureHandle TextureManager::loadTexture(
 	if (isHDR) {
 		encoding = (GLenum)GL_FLOAT;
 		definition.format = GL_RGB16F;
+		definition.wrapping = GL_REPEAT;
 	}
 
 	TextureManager::TextureSpecification specs {
 		.definition = definition,
-		.data = TextureManager::TextureData { .format = dataFormat,
-                                             .encoding = encoding,
-                                             .data = data }
+		.data =
+			TextureManager::TextureData {
+										 .format = dataFormat,
+										 .encoding = encoding,
+										 .data = data,
+										 }
 	};
 
 	return createTexture(specs, handle);

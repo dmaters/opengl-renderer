@@ -8,8 +8,7 @@ private:
 	bool m_depthEnabled = false;
 
 public:
-	FullscreenPass(MaterialHandle material, bool depthEnabled = false) :
-		m_material(material), m_depthEnabled(depthEnabled) {}
+	FullscreenPass(MaterialHandle material) : m_material(material) {}
 
 	void render(ResourceManager& resourceManager);
 };

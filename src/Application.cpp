@@ -55,6 +55,9 @@ Application::Application() {
 	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	glDebugMessageCallback(debugCallback, 0);
 	glDebugMessageControl(
 		GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE

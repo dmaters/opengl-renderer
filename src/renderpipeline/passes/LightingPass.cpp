@@ -71,11 +71,8 @@ void LightingPass::render(
 	m_finalFB.setResolution(resolution, resourceManager.getTextureManager());
 	m_finalFB.bind();
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE);
+	glStencilFunc(GL_EQUAL, 1, 0xFF);
 
 	m_directLightingPass->render(resourceManager);
 	m_iblPass->render(resourceManager);
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
