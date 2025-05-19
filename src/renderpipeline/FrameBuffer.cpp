@@ -10,19 +10,21 @@ constexpr GLenum attachmentTypeToEnum(FrameBufferAttachment attachment) {
 	switch (attachment) {
 		case FrameBufferAttachment::COLOR0:
 			return GL_COLOR_ATTACHMENT0;
-			break;
+
 		case FrameBufferAttachment::COLOR1:
 			return GL_COLOR_ATTACHMENT1;
-			break;
+
 		case FrameBufferAttachment::COLOR2:
 			return GL_COLOR_ATTACHMENT2;
-			break;
+
 		case FrameBufferAttachment::COLOR3:
 			return GL_COLOR_ATTACHMENT3;
-			break;
+
 		case FrameBufferAttachment::DEPTH:
+			return GL_DEPTH_ATTACHMENT;
+
+		case FrameBufferAttachment::DEPTH_STENCIL:
 			return GL_DEPTH_STENCIL_ATTACHMENT;
-			break;
 	}
 }
 
@@ -35,7 +37,7 @@ FrameBuffer FrameBuffer::getShadowMapFB(
 	glCreateFramebuffers(1, &fb.m_framebuffer);
 	TextureManager::TextureSpecification depthSpecs = {
 		.definition = {
-			.format = GL_DEPTH24_STENCIL8,
+			.format = GL_DEPTH_COMPONENT24,
 			.width = resolution.x,
 			.height = resolution.y,
 		},
@@ -126,7 +128,7 @@ FrameBuffer FrameBuffer::getGBufferPassFB(
 
 	};
 	fb.setAttachment(
-		FrameBufferAttachment::DEPTH,
+		FrameBufferAttachment::DEPTH_STENCIL,
 		textureManager.createTexture(depthSpecs),
 		textureManager
 	);
@@ -175,7 +177,8 @@ void FrameBuffer::setAttachment(
 
 	std::vector<GLenum> drawBuffers;
 	for (auto& [attachment, texture] : m_attachments) {
-		if (attachment != FrameBufferAttachment::DEPTH)
+		if (attachment != FrameBufferAttachment::DEPTH &&
+		    attachment != FrameBufferAttachment::DEPTH_STENCIL)
 			drawBuffers.push_back(attachmentTypeToEnum(attachment));
 	}
 	glNamedFramebufferDrawBuffers(

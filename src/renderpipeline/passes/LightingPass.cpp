@@ -59,7 +59,7 @@ LightingPass::LightingPass(
 	);
 
 	m_finalFB.setAttachment(
-		FrameBufferAttachment::DEPTH,
+		FrameBufferAttachment::DEPTH_STENCIL,
 		gbufferData.depth,
 		resourceManager.getTextureManager()
 	);
@@ -72,7 +72,9 @@ void LightingPass::render(
 	m_finalFB.bind();
 
 	glStencilFunc(GL_EQUAL, 1, 0xFF);
+	glBlendFunc(GL_SRC_ALPHA, 1);
 
 	m_directLightingPass->render(resourceManager);
 	m_iblPass->render(resourceManager);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }

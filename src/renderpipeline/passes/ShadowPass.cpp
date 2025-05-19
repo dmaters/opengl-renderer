@@ -4,6 +4,7 @@
 #include "ResourceManager.h"
 #include "Resources.h"
 #include "Scene.h"
+#include "glad/glad.h"
 #include "renderpipeline/BasePass.h"
 
 ShadowPass::ShadowPass(ResourceManager& resourceManager) {
@@ -83,6 +84,7 @@ void ShadowPass::render(Scene& scene, ResourceManager& resourceManager) {
 		resourceManager.getMaterial(m_omniShadowMaterial);
 
 	m_shadowMapFB.bind();
+
 	for (int i = 0; i < lights.size(); i++) {
 		Light& light = lights[i];
 

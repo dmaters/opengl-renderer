@@ -236,7 +236,8 @@ Scene SceneLoader::Load(
 ) {
 	Assimp::Importer importer;
 	auto import = importer.ReadFile(
-		path.string().c_str(), aiProcessPreset_TargetRealtime_Quality
+		path.string().c_str(),
+		aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipWindingOrder
 	);
 	auto folderPath = path.parent_path();
 	loadMaterials(*import, folderPath, resourceManager);

@@ -70,7 +70,7 @@ float shadowPercentage(int light) {
 	float depth = texture(sampler2D(lights[light].shadow_map), projCoords.xy).r;
 	float currentDepth = projCoords.z;
 
-	return (currentDepth - 0.0005) > depth ? 1.0 : 0;
+	return currentDepth > depth + 0.005 ? 1.0 : 0;
 }
 
 bool is_omni_shadow(int light) {
@@ -88,16 +88,19 @@ vec3 fresnelSchlick(float HdotV, vec3 F0) {
 	return F0 + (1.0 - F0) * pow(clamp(1.0 - HdotV, 0.0, 1.0), 5.0);
 }
 
+float geometrySchlickGGX(float NdotV, float a) {
+	float r = (a + 1.0);
+	float k = (r * r) / 8.0;
+	return NdotV / (NdotV * (1.0 - k) + k);
+}
+
 float geometrySmith(float NdotV, float NdotL, float a) {
-	float a2 = a * a;
-	float GGXV = NdotL * sqrt((NdotV - NdotV * a2) * NdotV + a2);
-	float GGXL = NdotV * sqrt((NdotL - NdotL * a2) * NdotL + a2);
-	return 0.5 / (GGXV + GGXL);
+	return geometrySchlickGGX(NdotV, a) * geometrySchlickGGX(NdotL, a);
 }
 
 vec3 microfacetBRDF(vec2 uv, vec3 viewDir, vec3 lightDir) {
 	vec3 halfview = normalize(viewDir + lightDir);
-	float roughness = max(texture(_metallic_roughness, uv).b, 0.05);
+	float roughness = max(texture(_metallic_roughness, uv).g, 0.05);
 	float metallic = texture(_metallic_roughness, uv).r;
 	vec3 albedo = texture(_albedo, uv).rgb;
 	vec3 norm = texture(_normal, uv).rgb;
@@ -123,9 +126,7 @@ vec3 microfacetBRDF(vec2 uv, vec3 viewDir, vec3 lightDir) {
 }
 
 void main() {
-	mat3 rotationMat = mat3(view);
-	vec3 translation = vec3(view[3]);
-	vec3 cameraPos = -transpose(rotationMat) * translation;
+	vec3 cameraPos = inverse(view)[3].xyz;
 	vec4 fragPos = texture(_world_position, TexCoord);
 
 	vec3 view_dir = normalize(cameraPos - fragPos.xyz);

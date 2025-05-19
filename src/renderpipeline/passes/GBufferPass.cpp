@@ -42,7 +42,8 @@ GBufferOutput GBufferPass::getOutput() {
 			m_gbufferFB.getAttachment(FrameBufferAttachment::COLOR2),
 		.metallicRoughness =
 			m_gbufferFB.getAttachment(FrameBufferAttachment::COLOR3),
-		.depth = m_gbufferFB.getAttachment(FrameBufferAttachment::DEPTH),
+		.depth =
+			m_gbufferFB.getAttachment(FrameBufferAttachment::DEPTH_STENCIL),
 
 	};
 }

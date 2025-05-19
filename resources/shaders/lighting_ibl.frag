@@ -28,9 +28,7 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
 }
 
 void main() {
-	mat3 rotationMat = mat3(view);
-	vec3 translation = vec3(view[3]);
-	vec3 cameraPos = -transpose(rotationMat) * translation;
+	vec3 cameraPos = inverse(view)[3].xyz;
 	vec4 fragPos = texture(_world_position, TexCoord);
 
 	float metallic = texture(_metallic_roughness, TexCoord).r;
@@ -54,7 +52,7 @@ void main() {
 		textureLod(irradiance_specular, R, roughness * 5).rgb;
 	vec2 envBRDF = texture(brdf_lut, vec2(max(dot(N, V), 0.0), roughness)).rg;
 	vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
-	vec3 ambient = (kD * diffuse + specular);
+	vec3 ambient = (kD * diffuse + specular * 0.1);
 
 	FragColor = vec4(ambient, 1);
 }

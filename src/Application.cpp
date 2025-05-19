@@ -58,6 +58,9 @@ Application::Application() {
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
 	glDebugMessageCallback(debugCallback, 0);
 	glDebugMessageControl(
 		GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE
@@ -103,6 +106,21 @@ void Application::run(std::filesystem::path scenePath) {
 	camera.setOrientation(orientation);
 
 	while (!glfwWindowShouldClose(m_window)) {
+		int width = 0, height = 0;
+		glfwGetWindowSize(m_window, &width, &height);
+
+		if (width != m_width || height != m_height) {
+			if (width != 0 && height != 0)
+				m_renderer->setResolution(width, height);
+			m_width = width;
+			m_height = height;
+		}
+
+		if (m_width == 0 || m_height == 0) {
+			glfwPollEvents();
+			continue;
+		}
+
 		double currentTime = glfwGetTime();
 
 		float delta = (float)(currentTime - previousTime);
@@ -126,15 +144,6 @@ void Application::run(std::filesystem::path scenePath) {
 		glfwPollEvents();
 
 		previousTime = currentTime;
-
-		int width = 0, height = 0;
-		glfwGetWindowSize(m_window, &width, &height);
-
-		if (width != m_width || height != m_height) {
-			m_renderer->setResolution(width, height);
-			m_width = width;
-			m_height = height;
-		}
 	}
 }
 
