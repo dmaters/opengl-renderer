@@ -65,8 +65,9 @@ Application::Application() {
 	glDebugMessageControl(
 		GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE
 	);
-	glfwSetInputMode(m_window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
 
+	glfwSwapInterval(0);
+	glfwSetInputMode(m_window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
 	glfwSetInputMode(m_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
 	ImGui::CreateContext();
@@ -133,7 +134,7 @@ void Application::run(std::filesystem::path scenePath) {
 		processMovement(delta, &direction, &rotation, &toggleSpeed);
 
 		camera.movementInput(direction, delta);
-		camera.rotationInput(rotation, delta);
+		camera.rotationInput(rotation / glm::vec2(m_width, m_height), delta);
 
 		m_renderer->render(scene);
 
@@ -150,10 +151,13 @@ void Application::run(std::filesystem::path scenePath) {
 void Application::processInput(double deltaTime) {
 	int state = glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT);
 
-	if (state == GLFW_PRESS) {
+	if (state == GLFW_PRESS && !m_cameraControl) {
+		glfwSetCursorPos(m_window, m_width / 2, m_height / 2);
 		m_cameraControl = true;
 		glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	} else {
+	}
+
+	if (state != GLFW_PRESS && m_cameraControl) {
 		m_cameraControl = false;
 		glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
@@ -173,10 +177,7 @@ void Application::processMovement(
 	double xpos, ypos;
 	glfwGetCursorPos(m_window, &xpos, &ypos);
 
-	*rotation = glm::vec2(
-		(xpos - m_width / 2) * deltaTime * 100,
-		(ypos - m_height / 2) * deltaTime * 100
-	);
+	*rotation = glm::vec2((xpos - m_width / 2), (ypos - m_height / 2));
 
 	glfwSetCursorPos(m_window, m_width / 2, m_height / 2);
 

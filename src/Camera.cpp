@@ -21,10 +21,10 @@ void Camera::movementInput(glm::vec3 direction, float delta) {
 }
 
 void Camera::rotationInput(glm::vec2 rotation, float delta) {
-	float dPitch = rotation.y * delta * 1.0f;
+	float dPitch = rotation.y * 5;
 	if (glm::degrees(abs(m_pitch + dPitch)) > 89) dPitch = 0;
 	m_pitch += dPitch;
-	float dYaw = rotation.x * delta * 1.0f;
+	float dYaw = rotation.x * 5;
 	m_yaw += dYaw;
 	glm::quat pitchQuat = glm::angleAxis(-m_pitch, glm::vec3(1, 0, 0));
 	glm::quat yawQuat = glm::angleAxis(-m_yaw, glm::vec3(0, 1, 0));
