@@ -13,7 +13,7 @@ ShadowPass::ShadowPass(ResourceManager& resourceManager) {
 	);
 	ProgramHandle shadowProgram = resourceManager.registerProgram({
 		.vertex = "resources/shaders/shadow.vert",
-		.fragment = "resources/shaders/shadow.frag",
+		.fragment = "resources/shaders/dummy.frag",
 	});
 
 	m_shadowMaterial =
@@ -21,9 +21,9 @@ ShadowPass::ShadowPass(ResourceManager& resourceManager) {
 	m_shadowPass = BasePass(m_shadowMaterial);
 
 	ProgramHandle omniShadowProgram = resourceManager.registerProgram({
-		.vertex = "resources/shaders/shadow_omni.vert",
+		.vertex = "resources/shaders/model_transform.vert",
 		.geometry = "resources/shaders/shadow_omni.geom",
-		.fragment = "resources/shaders/shadow.frag",
+		.fragment = "resources/shaders/dummy.frag",
 	});
 
 	m_omniShadowMaterial =
