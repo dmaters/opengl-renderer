@@ -11,4 +11,6 @@ public:
 	FullscreenPass(MaterialHandle material) : m_material(material) {}
 
 	void render(ResourceManager& resourceManager);
+
+	MaterialHandle getMaterial() const { return m_material; }
 };

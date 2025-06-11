@@ -138,7 +138,7 @@ void Application::run(std::filesystem::path scenePath) {
 
 		m_renderer->render(scene);
 
-		UI::Render(scene);
+		// UI::Render(scene);
 
 		glfwSwapBuffers(m_window);
 

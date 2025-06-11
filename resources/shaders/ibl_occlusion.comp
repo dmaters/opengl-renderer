@@ -1,0 +1,161 @@
+#version 460 core
+#extension GL_ARB_bindless_texture : require
+
+#define KERNEL_SIZE 4
+#define MAX_SAMPLES 32
+#define PI          3.1415926535897932384626433832795
+
+layout(local_size_x = KERNEL_SIZE, local_size_y = KERNEL_SIZE) in;
+
+layout(bindless_sampler) uniform sampler2D _world_position;
+layout(bindless_sampler) uniform sampler2D _normal;
+layout(bindless_sampler) uniform sampler2D _occlusion_map;
+layout(bindless_sampler) uniform sampler2D _depth;
+layout(bindless_image, r16f) uniform image2D _occlusion_mask;
+
+uniform mat4 view;
+uniform mat4 projection;
+
+layout(std140, binding = 0) uniform projection_view {
+	mat4 view;
+	mat4 projection;
+}
+base_transforms;
+
+shared uint hit;
+
+bool isVisible(vec3 position) {
+	vec4 occlusionSpacePos = projection * view * vec4(position, 1);
+	occlusionSpacePos = occlusionSpacePos * 0.5 + 0.5;
+	float occlusionMapPos = texture(_occlusion_map, occlusionSpacePos.xy).r;
+
+	return occlusionSpacePos.z < (occlusionMapPos + 0.005);
+}
+
+vec3 iterate_screenSpace(vec3 position, vec3 normal) {
+	vec3 right = normalize(
+		cross(abs(normal.y) < 0.999 ? vec3(0, 1, 0) : vec3(0, 0, -1), normal)
+	);
+	vec3 up = normalize(cross(normal, right));
+
+	vec2 texCoord = vec2(gl_WorkGroupID.xy + 0.5) / gl_NumWorkGroups.xy;
+
+	float angle =
+		((gl_LocalInvocationID.x + KERNEL_SIZE * gl_LocalInvocationID.y) /
+	     (KERNEL_SIZE * KERNEL_SIZE)) *
+		2 * PI;
+
+	vec2 offset = vec2(sin(angle), cos(angle));
+
+	float sampleSize = 0.05;
+
+	vec3 baseDir = normalize(right * offset.x + up * offset.y);
+
+	vec3 baseDirUp = cross(baseDir, normal);
+
+	vec4 currentDirClip = base_transforms.projection * vec4(baseDir, 0);
+	vec3 currentDir = baseDir;
+
+	for (int i = 1; i < MAX_SAMPLES; i++) {
+		vec2 newposClip =
+			normalize(currentDirClip.xy) * sampleSize * i + texCoord;
+
+		if (abs(newposClip.x) > 1 || abs(newposClip.y) > 1) break;
+
+		vec3 truePos = texture(_world_position, newposClip).xyz - position;
+
+		if (length(truePos) < 0.0001 || length(truePos + position) < 0.0001)
+			break;
+
+		vec3 trueDir = normalize(truePos);
+		vec3 deltaDir = trueDir - currentDir;
+		float DdB = dot(deltaDir, baseDir);
+
+		if (DdB > -0.01) continue;
+
+		currentDir = normalize(trueDir - dot(trueDir, baseDirUp) * baseDirUp);
+		currentDirClip = base_transforms.projection * vec4(currentDir, 0);
+
+		if (dot(currentDir, baseDir) < 0) {
+			currentDir = normal;
+			break;
+		}
+	}
+
+	return currentDir;
+}
+
+vec3 iterate_occlusionSpace(vec3 position, vec3 direction, vec3 normal) {
+	vec3 baseDir = cross(normal, cross(direction, normal));
+
+	vec3 upDir = cross(normal, baseDir);
+
+	vec3 currentDir = direction;
+
+	mat4 invProj = inverse(projection);
+	mat4 invProjView = inverse(projection * view);
+
+	float sampleSize = 0.05;
+	float stepLength = length(
+		invProj * ((projection * vec4(direction, 0)) * 0.5 + 0.5 * sampleSize)
+	);
+
+	for (int i = 1; i < MAX_SAMPLES; i++) {
+		vec4 occlusionSpacePos =
+			projection * view * vec4(position + currentDir * stepLength, 1);
+
+		occlusionSpacePos = occlusionSpacePos * 0.5 + 0.5;
+
+		if (abs(occlusionSpacePos.x) > 1 || abs(occlusionSpacePos.y) > 1) break;
+		float depth = texture(_occlusion_map, occlusionSpacePos.xy).r;
+
+		if (occlusionSpacePos.z > depth) continue;
+
+		occlusionSpacePos.z = depth;
+		occlusionSpacePos = occlusionSpacePos * 2 - 1;
+		vec4 adjustedPosition = invProjView * occlusionSpacePos;
+		vec3 deltaDir = normalize(adjustedPosition.xyz - position) - currentDir;
+
+		float DdB = dot(deltaDir, baseDir);
+		if (DdB >= 0) continue;
+
+		currentDir = normalize(currentDir + baseDir * DdB);
+
+		float stepLength =
+			length(invProj * ((projection * vec4(currentDir, 0)) * sampleSize));
+
+		if (dot(currentDir, baseDir) < 0) {
+			currentDir = normal;
+			break;
+		}
+	}
+
+	return currentDir;
+}
+
+int intersection(vec3 normal, vec3 position) {
+	if (isVisible(position)) return 1;
+	vec3 currentDir = iterate_screenSpace(position, normal);
+	if (length(currentDir - normal) < 0.001) return 0;
+	vec3 finalDirection = iterate_occlusionSpace(position, currentDir, normal);
+	return length(finalDirection - normal) < 0.005 ? 0 : 1;
+}
+
+void main() {
+	vec2 texCoord = vec2(gl_WorkGroupID.xy + 0.5) / gl_NumWorkGroups.xy;
+	vec3 position = texture(_world_position, texCoord).xyz;
+	vec3 normal = texture(_normal, texCoord).xyz;
+
+	if (gl_LocalInvocationID == uvec3(0)) hit = 0;
+	barrier();
+	if (normal != vec3(0)) atomicAdd(hit, intersection(normal, position));
+
+	barrier();
+
+	if (gl_LocalInvocationID == uvec3(0, 0, 0))
+		imageStore(
+			_occlusion_mask, ivec2(gl_WorkGroupID.xy), vec4(vec3(hit / 16.0), 1)
+		);
+
+	barrier();
+}

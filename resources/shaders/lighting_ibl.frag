@@ -12,8 +12,9 @@ layout(bindless_sampler) uniform sampler2D _world_position;
 layout(bindless_sampler) uniform sampler2D _metallic_roughness;
 
 layout(bindless_sampler) uniform samplerCube irradiance_specular;
-layout(bindless_sampler) uniform sampler2D brdf_lut;
 layout(bindless_sampler) uniform samplerCube irradiance_diffuse;
+layout(bindless_sampler) uniform sampler2D brdf_lut;
+layout(bindless_sampler) uniform sampler2D occlusion_mask;
 
 layout(std140, binding = 0) uniform projection_view {
 	mat4 view;
@@ -53,6 +54,6 @@ void main() {
 	vec2 envBRDF = texture(brdf_lut, vec2(max(dot(N, V), 0.0), roughness)).rg;
 	vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 	vec3 ambient = (kD * diffuse + specular * 0.1);
-
-	FragColor = vec4(ambient, 1);
+	float occlusion = textureLod(occlusion_mask, TexCoord, 4).r;
+	FragColor = vec4(ambient * occlusion, 1);
 }

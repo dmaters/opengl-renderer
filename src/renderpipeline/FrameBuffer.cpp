@@ -28,7 +28,7 @@ constexpr GLenum attachmentTypeToEnum(FrameBufferAttachment attachment) {
 	}
 }
 
-FrameBuffer FrameBuffer::getShadowMapFB(
+FrameBuffer FrameBuffer::getDepthOnlyFB(
 	TextureManager& textureManager, glm::ivec2 resolution
 ) {
 	FrameBuffer fb;
@@ -161,6 +161,7 @@ FrameBuffer FrameBuffer::getGeneralRenderPassFB(
 
 	return fb;
 }
+
 void FrameBuffer::setAttachment(
 	FrameBufferAttachment attachment,
 	TextureHandle handle,

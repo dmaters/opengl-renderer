@@ -26,7 +26,7 @@ public:
 	GBufferPass(ResourceManager& resourceManager);
 
 	void render(
-		glm::ivec2 resolution, Scene& scene, ResourceManager& m_resourceManager
+		glm::ivec2 resolution, Scene& scene, ResourceManager& resourceManager
 	);
 
 	GBufferOutput getOutput();

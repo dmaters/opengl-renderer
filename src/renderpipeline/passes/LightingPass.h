@@ -20,6 +20,7 @@ public:
 		GBufferOutput gbufferData,
 		TextureHandle diffuseIrradiance,
 		TextureHandle specularIrradiance,
+		TextureHandle occlusionMask,
 		ResourceManager& resourceManager
 	);
 	void render(glm::ivec2 resolution, ResourceManager& resourceManager);

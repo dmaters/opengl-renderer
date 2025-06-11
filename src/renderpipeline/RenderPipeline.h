@@ -9,12 +9,15 @@
 
 #include "ComputeShader.h"
 #include "FrameBuffer.h"
+#include "FullscreenPass.h"
 #include "RenderPass.h"
 #include "ResourceManager.h"
 #include "Resources.h"
 #include "Scene.h"
 #include "passes/CompositionPass.h"
+#include "passes/DebugOutputPass.h"
 #include "passes/GBufferPass.h"
+#include "passes/IBLOcclusionPass.h"
 #include "passes/IrradiancePass.h"
 #include "passes/LightingPass.h"
 #include "passes/ShadowPass.h"
@@ -31,12 +34,12 @@ private:
 	std::optional<ShadowPass> m_shadowPass;
 	std::optional<IrradiancePass> m_irradiancePass;
 	std::optional<GBufferPass> m_gbufferPass;
+	std::optional<IBLOcclusionPass> m_iblOcclusionPass;
 	std::optional<LightingPass> m_lightingPass;
 	std::optional<SkyboxPass> m_skyboxPass;
-
 	std::optional<CompositionPass> m_compositionPass;
-
 	std::shared_ptr<ResourceManager> m_resourceManager;
+	std::optional<DebugOutputPass> m_debugPass;
 
 public:
 	RenderPipeline(std::shared_ptr<ResourceManager> resourceManager);

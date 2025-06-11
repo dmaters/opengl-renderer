@@ -16,4 +16,6 @@ public:
 		const std::vector<std::reference_wrapper<Primitive>>& primitives,
 		ResourceManager& resourceManager
 	);
+
+	MaterialHandle getMaterial() const { return m_material; }
 };

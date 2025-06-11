@@ -11,7 +11,9 @@ public:
 	ComputeShader(std::filesystem::path path) : Program(path) {}
 	void dispatch(glm::ivec3 axis);
 
+	using Program::setUBO;
 	using Program::setUniform;
+
 	void setUniform(
 		std::string name, Texture& texture, GLenum usage, uint32_t mipmap = 0
 	);

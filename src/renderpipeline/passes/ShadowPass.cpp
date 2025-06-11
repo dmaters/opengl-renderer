@@ -8,7 +8,7 @@
 #include "renderpipeline/BasePass.h"
 
 ShadowPass::ShadowPass(ResourceManager& resourceManager) {
-	m_shadowMapFB = FrameBuffer::getShadowMapFB(
+	m_shadowMapFB = FrameBuffer::getDepthOnlyFB(
 		resourceManager.getTextureManager(), glm::uvec2(512, 512)
 	);
 	ProgramHandle shadowProgram = resourceManager.registerProgram({

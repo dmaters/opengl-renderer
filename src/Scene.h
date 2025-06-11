@@ -25,11 +25,13 @@ public:
 	friend class SceneLoader;
 
 public:
-	inline Camera& getCamera() { return m_camera; }
+	Camera& getCamera() { return m_camera; }
 	void addLight(LightDescription& desc);
 
 	const std::vector<std::reference_wrapper<Primitive>> getPrimitives(
 		std::function<bool(Primitive&)> cullingFunction
 	);
 	std::vector<Light>& getLights() { return m_lights; }
+
+	float getSize() const { return m_bounds; }
 };

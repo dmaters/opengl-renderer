@@ -9,6 +9,7 @@ LightingPass::LightingPass(
 	GBufferOutput gbufferData,
 	TextureHandle diffuseIrradiance,
 	TextureHandle specularIrradiance,
+	TextureHandle occlusionMask,
 	ResourceManager& resourceManager
 ) {
 	ProgramHandle lightingProgram = resourceManager.registerProgram({
@@ -51,6 +52,7 @@ LightingPass::LightingPass(
 	material.setUniform("irradiance_specular", specularIrradiance);
 	material.setUniform("irradiance_diffuse", diffuseIrradiance);
 	material.setUniform("brdf_lut", brdfLUT);
+	material.setUniform("occlusion_mask", occlusionMask);
 
 	m_directLightingPass = FullscreenPass(directMaterialhandle);
 	m_iblPass = FullscreenPass(iblMaterialHandle);

@@ -29,7 +29,7 @@ private:
 
 protected:
 public:
-	static FrameBuffer getShadowMapFB(
+	static FrameBuffer getDepthOnlyFB(
 		TextureManager& textureManager, glm::ivec2 resolution
 	);
 	static FrameBuffer getGBufferPassFB(
@@ -38,7 +38,9 @@ public:
 	static FrameBuffer getGeneralRenderPassFB(
 		TextureManager& textureManager, glm::ivec2 resolution
 	);
-
+	static FrameBuffer getMaskingFB(
+		TextureManager& textureManager, glm::ivec2 resolution
+	);
 	TextureHandle getAttachment(FrameBufferAttachment attachment) const {
 		if (m_attachments.find(attachment) == m_attachments.end())
 			return TextureHandle::UNASSIGNED;
