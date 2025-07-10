@@ -28,6 +28,23 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
 	                pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+bool checkSpecularOcclusion(vec3 position, vec3 direction, vec3 normal) {
+	vec4 projDir = projection * view * vec4(direction, 0);
+	vec2 clipDir = projDir.xy;
+
+	vec3 updir = cross(direction, cross(normal, direction));
+
+	clipDir.x = clamp(clipDir.x + TexCoord.x, 0, 1) - TexCoord.x;
+	clipDir.y = clamp(clipDir.y + TexCoord.y, 0, 1) - TexCoord.y;
+	clipDir /= 32;
+
+	for (int i = 0; i < 32; i++) {
+		vec3 samplePos = texture(_world_position, TexCoord + clipDir * i).xyz;
+		if (dot(samplePos - position, updir) > 0) return false;
+	}
+	return true;
+}
+
 void main() {
 	vec3 cameraPos = inverse(view)[3].xyz;
 	vec4 fragPos = texture(_world_position, TexCoord);
@@ -53,6 +70,7 @@ void main() {
 		textureLod(irradiance_specular, R, roughness * 5).rgb;
 	vec2 envBRDF = texture(brdf_lut, vec2(max(dot(N, V), 0.0), roughness)).rg;
 	vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+	if (!checkSpecularOcclusion(fragPos.xyz, R, N)) specular = vec3(0);
 	vec3 ambient = (kD * diffuse + specular * 0.1);
 	float occlusion = textureLod(occlusion_mask, TexCoord, 4).r;
 	FragColor = vec4(ambient * occlusion, 1);
