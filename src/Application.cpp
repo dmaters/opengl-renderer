@@ -52,7 +52,7 @@ Application::Application() {
 		throw;
 	}
 
-	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glEnable(GL_DEBUG_OUTPUT);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
 	glEnable(GL_STENCIL_TEST);
@@ -63,7 +63,37 @@ Application::Application() {
 
 	glDebugMessageCallback(debugCallback, 0);
 	glDebugMessageControl(
-		GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE
+		GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE
+	);
+	glDebugMessageControl(
+		GL_DONT_CARE, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, nullptr, GL_TRUE
+	);
+
+	glDebugMessageControl(
+		GL_DONT_CARE,
+		GL_DEBUG_TYPE_PERFORMANCE,
+		GL_DONT_CARE,
+		0,
+		nullptr,
+		GL_TRUE
+	);
+
+	glDebugMessageControl(
+		GL_DONT_CARE,
+		GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR,
+		GL_DONT_CARE,
+		0,
+		nullptr,
+		GL_TRUE
+	);
+
+	glDebugMessageControl(
+		GL_DONT_CARE,
+		GL_DEBUG_TYPE_PORTABILITY,
+		GL_DONT_CARE,
+		0,
+		nullptr,
+		GL_TRUE
 	);
 
 	glfwSwapInterval(0);

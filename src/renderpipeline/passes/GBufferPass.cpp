@@ -1,8 +1,10 @@
 #include "GBufferPass.h"
 
+#include <glad/glad.h>
+
 #include "ResourceManager.h"
 #include "Scene.h"
-#include "glad/glad.h"
+#include "State.h"
 #include "renderpipeline/BasePass.h"
 
 GBufferPass::GBufferPass(ResourceManager& resourceManager) {
@@ -28,6 +30,9 @@ void GBufferPass::render(
 				primitive.getPosition(), primitive.getSize()
 			);
 		});
+
+	State::Get().primitiveCount = primitives.size();
+
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 	glStencilMask(0xFF);
 	m_pass.value().render(primitives, resourceManager);

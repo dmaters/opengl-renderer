@@ -1,12 +1,14 @@
 #pragma once
 
+#include <glad/glad.h>
+
+#include <chrono>
 #include <memory>
 
 #include "Material.h"
 #include "ResourceManager.h"
 #include "Scene.h"
 #include "renderpipeline/RenderPipeline.h"
-
 
 class Renderer {
 private:
@@ -16,6 +18,9 @@ private:
 	glm::mat4 m_projection, m_view;
 
 	int m_width, m_height;
+
+	std::array<GLuint, 3> m_queryIDs;
+	std::chrono::time_point<std::chrono::steady_clock> m_lastCPUTick;
 
 public:
 	Renderer(
