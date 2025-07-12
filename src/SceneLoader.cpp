@@ -70,8 +70,12 @@ Primitive loadMesh(
 ) {
 	std::vector<std::byte> vertices;
 	float colliderSize = 0;
+	glm::vec3 centerPos = glm::vec3(0);
 	for (int i = 0; i < mesh.mNumVertices; i++) {
 		aiVector3t<float> position = mesh.mVertices[i];
+
+		centerPos += glm::vec3(position.x, position.y, position.z) /
+		             (float)mesh.mNumVertices;
 
 		colliderSize = std::max(position.Length(), colliderSize);
 		vertices.insert(
@@ -109,7 +113,11 @@ Primitive loadMesh(
 
 	VertexArray vao(vertices, indices, GL_UNSIGNED_INT);
 
-	return Primitive(vao, mesh.mMaterialIndex + 1, colliderSize);
+	return Primitive(
+		vao,
+		mesh.mMaterialIndex + 1,
+		glm::vec4(centerPos, colliderSize - glm::length(centerPos))
+	);
 }
 struct SceneLoadSpecs {
 	Scene& baseScene;
@@ -237,7 +245,7 @@ Scene SceneLoader::Load(
 	Assimp::Importer importer;
 	auto import = importer.ReadFile(
 		path.string().c_str(),
-		aiProcessPreset_TargetRealtime_Quality | aiProcess_FlipWindingOrder
+		aiProcessPreset_TargetRealtime_Quality | aiProcess_CalcTangentSpace
 	);
 	auto folderPath = path.parent_path();
 	loadMaterials(*import, folderPath, resourceManager);
@@ -255,13 +263,11 @@ Scene SceneLoader::Load(
 
 	float lowbound = 0, highbound = 0;
 	for (Primitive& primitive : scene.m_primitives) {
-		lowbound = std::min(
-			glm::length(primitive.getPosition()) - primitive.getSize(), lowbound
-		);
-		highbound = std::max(
-			glm::length(primitive.getPosition()) + primitive.getSize(),
-			highbound
-		);
+		glm::vec4 collider = primitive.getCollider();
+		lowbound =
+			std::min(glm::length(glm::vec3(collider)) + collider.w, lowbound);
+		highbound =
+			std::max(glm::length(glm::vec3(collider)) + collider.w, highbound);
 	}
 
 	scene.m_bounds = highbound;

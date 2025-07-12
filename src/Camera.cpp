@@ -14,7 +14,7 @@
 
 void Camera::movementInput(glm::vec3 direction, float delta) {
 	glm::mat3 orientation = getOrientation();
-
+	orientation[2] = -orientation[2];
 	glm::vec3 forward = orientation * direction;
 
 	m_position += forward * delta * (!m_speeding ? 100.0f : 300.0f);
@@ -26,8 +26,8 @@ void Camera::rotationInput(glm::vec2 rotation, float delta) {
 	m_pitch += dPitch;
 	float dYaw = rotation.x * 5;
 	m_yaw += dYaw;
-	glm::quat pitchQuat = glm::angleAxis(-m_pitch, glm::vec3(1, 0, 0));
-	glm::quat yawQuat = glm::angleAxis(-m_yaw, glm::vec3(0, 1, 0));
+	glm::quat pitchQuat = glm::angleAxis(m_pitch, glm::vec3(1, 0, 0));
+	glm::quat yawQuat = glm::angleAxis(m_yaw, glm::vec3(0, 1, 0));
 
 	m_orientation =
 		m_baseOrientation * glm::transpose(glm::mat3_cast(pitchQuat * yawQuat));

@@ -26,9 +26,8 @@ void GBufferPass::render(
 
 	std::vector<std::reference_wrapper<Primitive>> primitives =
 		scene.getPrimitives([frustum](Primitive& primitive) {
-			return frustum.isSphereInFrustum(
-				primitive.getPosition(), primitive.getSize()
-			);
+			glm::vec4 collider = primitive.getCollider();
+			return frustum.isSphereInFrustum(glm::vec3(collider), collider.w);
 		});
 
 	State::Get().primitiveCount = primitives.size();

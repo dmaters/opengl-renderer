@@ -16,17 +16,19 @@ public:
 private:
 	VertexArray m_vertexArray;
 	uint32_t m_materialIndex;
-	float m_size = 0;
+	glm::vec4 m_collider = glm::vec4(0);
 
 public:
-	Primitive(VertexArray vertexArray, uint32_t materialIndex, float size) :
+	Primitive(
+		VertexArray vertexArray, uint32_t materialIndex, glm::vec4 collider
+	) :
 		m_vertexArray(vertexArray),
 		m_materialIndex(materialIndex),
-		m_size(size) {}
+		m_collider(collider) {}
 
-	void setSize(float size) { m_size = size; }
+	void setCollider(glm::vec4 collider) { m_collider = collider; }
 
 	uint32_t getMaterialIndex() const { return m_materialIndex; }
 	const VertexArray& getVertexArray() const { return m_vertexArray; }
-	float getSize() const { return m_size; }
+	glm::vec4 getCollider() const { return m_collider; }
 };

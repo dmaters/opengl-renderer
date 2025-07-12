@@ -34,7 +34,6 @@ public:
 		glm::mat4 rotationMatrix = glm::mat4(m_orientation);
 		glm::mat4 translation = glm::translate(glm::mat4(1), m_position);
 		if (viewMatrix) {
-			rotationMatrix[2] = -rotationMatrix[2];
 			return glm::inverse(translation * rotationMatrix);
 		}
 		return translation * rotationMatrix * scaleMatrix;

@@ -131,10 +131,6 @@ void Application::run(std::filesystem::path scenePath) {
 
 	Camera& camera = scene.getCamera();
 	camera.setPosition(glm::vec3(0, 0, 20));
-	glm::mat3 orientation = glm::mat3(1);
-	orientation[0] = -orientation[0];
-	orientation[2] = -orientation[2];
-	camera.setOrientation(orientation);
 
 	while (!glfwWindowShouldClose(m_window)) {
 		int width = 0, height = 0;
