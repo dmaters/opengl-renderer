@@ -39,13 +39,13 @@ float getMetallic(vec2 uv) {
 	if ((instances[instance_index].components & 1 << 1) != 0)
 		return instances[instance_index].metallic_value;
 	return texture(textures[instances[instance_index].metallic_roughness], uv)
-	    .g;
+	    .b;
 }
 float getRoughness(vec2 uv) {
 	if ((instances[instance_index].components & 1 << 2) != 0)
 		return instances[instance_index].roughness_value;
 	return texture(textures[instances[instance_index].metallic_roughness], uv)
-	    .b;
+	    .g;
 }
 
 void main() {
